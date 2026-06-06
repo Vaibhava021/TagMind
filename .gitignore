@@ -1,0 +1,14 @@
+#React
+/frontend/node_modules
+/frontend/dist
+/frontend/.env
+
+
+#Django
+/backend/.venv
+/backend/config/db.sqlite3
+/backend/config/node_modules
+
+
+#Personal files / extra for development
+something.txt
