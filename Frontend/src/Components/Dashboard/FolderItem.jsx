@@ -2,10 +2,7 @@ import React, { useEffect } from 'react'
 
 export const FolderItem = ({name, item, shouldGlow, folder_accent, useBrandColor, onClick, isActive, onRightClick, isEditing, editingName, setEditingName, onSaveEdit}) => {  
       useEffect(() => {
-        console.log(
-      name,
-      shouldGlow
-      )
+            // console.log(name,shouldGlow)
       }, [])
       
   return (

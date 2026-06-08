@@ -3,7 +3,7 @@ import axios from 'axios';
 import BookmarkEditAccordion from './BookmarkEditAccordion';
 
 const BookmarkItem = ({bookmark, index, openId, setOpenId, mode, folderMap, domain, useBrandColor, handleToggle, onRightClick, editingId, setEditingId, selectedProfile, setIsPosting,
-                      isvaultOpen}) => {
+                      isvaultOpen, registerRef}) => {
     
     const isOpen = openId === bookmark.id
 
@@ -24,8 +24,9 @@ const BookmarkItem = ({bookmark, index, openId, setOpenId, mode, folderMap, doma
     }, []);
 
   return (
-         <div onContextMenu={onRightClick}
-                className='flex flex-col rounded-lg border overflow-hidden transition-all ease-in-out duration-350'
+         <div ref={registerRef}
+              onContextMenu={onRightClick}
+              className='flex flex-col rounded-lg border overflow-hidden transition-all ease-in-out duration-350'
                     style={{
                       // Use the normalized match flag here 
                       borderColor: isDomainMatched ? useBrandColor : "#534B52",

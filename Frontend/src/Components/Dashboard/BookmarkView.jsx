@@ -1,11 +1,11 @@
-import React, { useContext, useEffect, useMemo, useState } from 'react'
+import React, { useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { DomainContext } from '../../context/DomainContext'
 import BookmarkItem from './BookmarkItem';
 import { useChromeStorage } from '../../Hooks/useChromeStorage';
 import axios from 'axios';
 
 export const BookmarkView = ({ className, device, mode, folderData, bookmarks, useBrandColor, selectedFolder, setSelectedFolder, search, isPosting, setIsPosting, selectedProfile, 
-                              filter, recentTags, setRecentTags, addRecentTag, isvaultOpen }) => {
+                              filter, recentTags, setRecentTags, addRecentTag, isvaultOpen, open }) => {
 
   const {domain: currentSiteDomain} = useContext(DomainContext);
   const [openId, setOpenId] = useState(null);
@@ -19,7 +19,11 @@ export const BookmarkView = ({ className, device, mode, folderData, bookmarks, u
   const [contextMenu, setContextMenu] = useState(null)
   const [copied,setCopied] = useState(false)
 
-  // Store tags 
+  // For arrow indication 
+  const containerRef = useRef(null)
+  const bookmarkRefs = useRef({})
+  const [focusIndicators, setFocusIndicators] = useState({above: 0, below: 0})
+
 
   const parseSearch = (search) => {
     if (!search) return { type: 'title', value: '' };
@@ -56,26 +60,22 @@ export const BookmarkView = ({ className, device, mode, folderData, bookmarks, u
 
     let searchMatch = true
     if(search){
-        if(type === 'title'
-        ){
+        if(type === 'title')
+        {
             searchMatch =
                 b.title
                 ?.toLowerCase()
                 .includes(value)
         }
 
-        else if(type === 'tags'
-        ){
-            searchMatch =
-                value === ''
+        else if(type === 'tags')
+        {
+            searchMatch =value === ''
                 ? true
-                : b.tag_names?.some(
-                    tag=>
-                    tag.toLowerCase().includes(value)
-                )
+                : b.tag_names?.some(tag=>tag.toLowerCase().includes(value))
         }
-        else if(type === 'desc'
-        ){
+        else if(type === 'desc')
+        {
             searchMatch =b.description?.toLowerCase().includes(value)
         }
     }
@@ -83,39 +83,37 @@ export const BookmarkView = ({ className, device, mode, folderData, bookmarks, u
     )
 })
 
-
 // ---------- SORTING ----------
 
-  if(filter === 'A_Z'
-  ){result.sort(
-          (a,b)=>
-          a.title
-          .localeCompare(
-              b.title
-          )
-      )
-  }
+    if(filter === 'A_Z')
+      {
+        result.sort((a,b)=>a.title.localeCompare(b.title))
+      }
 
-  else if(filter === 'Z_A'
-  ){
-      result.sort(
-          (a,b)=>
-          b.title
-          .localeCompare(
-              a.title
-          )
-      )
-  }
+    else if(filter === 'Z_A')
+      {
+        result.sort((a,b)=>b.title.localeCompare(a.title))
+      }
 
-  else if(filter === 'recent'
-  ){
-      result.sort(
-          (a,b)=> new Date(b.created_at)-new Date(a.created_at)
-      )
-  }
+    else if(filter === 'recent')
+      {
+        result.sort((a,b)=> new Date(b.created_at)-new Date(a.created_at))
+      }
   return result
     }, [bookmarks, selectedFolder, device, search, filter]);
 
+  const matchedBookmarks = useMemo(() => {
+    const cleanCurrent =
+      currentSiteDomain?.toLowerCase().replace(/^www\./, '');
+
+    return filteredBookmarks.filter(bookmark => {
+      const cleanBookmark =
+        bookmark.domain?.toLowerCase().replace(/^www\./, '');
+
+      return cleanBookmark === cleanCurrent;
+    });
+  }, [filteredBookmarks, currentSiteDomain]);
+    
 
   const groupedBookmarks = useMemo(() => {
     if (mode !== 'domain') return {};
@@ -128,7 +126,6 @@ export const BookmarkView = ({ className, device, mode, folderData, bookmarks, u
     });
     return groups;
   }, [filteredBookmarks, mode]);
-  
 
   const handleToggle = (id) => {
     setOpenId(prevId => prevId === id ? null : id);
@@ -142,30 +139,21 @@ export const BookmarkView = ({ className, device, mode, folderData, bookmarks, u
     return map;
   }, [folderData]);
 
-  
   const rightClickMenu = () => {
     const closeMenu = (e) => {
-
       if (e.target.closest('.custom-context-menu'))
         return;
-
       setContextMenu(null);
     };
 
     window.addEventListener('click', closeMenu);
-
     return () => {
       window.addEventListener('click', closeMenu);
     };
   }
-
   
   const deleteBookmark = async (id) => {
       setIsPosting(true)
-      // console.log("DELETE CLICKED")
-      // console.log("ID:", id)
-      // console.log("URL:", `${endpoint}${id}/`)
-      
       try {
         await axios.delete(`${endpoint}${id}/`,
           {
@@ -206,142 +194,214 @@ export const BookmarkView = ({ className, device, mode, folderData, bookmarks, u
     }
   }
 
-  useEffect(()=>{
+  const calculateFocusIndicators = () => {
+     if(mode !== 'focus')
+      {
+        setFocusIndicators({
+          above: 0,
+          below: 0
+        })
+        return
+      }
 
-    // console.log('currentSiteDomain:', currentSiteDomain);
-    // console.log('bookmark domains:', filteredBookmarks.map(b => b.domain));
+    if (!containerRef.current)
+      return
+
+    const containerRect = containerRef.current.getBoundingClientRect()
+
+    let above = 0
+    let below = 0
+
+    matchedBookmarks.forEach(bookmark => {
+      const element = bookmarkRefs.current[bookmark.id]
+      if (!element)
+        return
+      const rect = element.getBoundingClientRect()
+      if (rect.bottom < containerRect.top) {
+        above++
+      }
+      else if (rect.top > containerRect.bottom) {
+        below++
+      }
+    })
+
+    // console.log({above,below})
+    setFocusIndicators({above,below})
+  }
+
+  useEffect(()=>{
+    // console.log("Matched Bookmarks:", matchedBookmarks)
+    // console.log("Matched Bookmarks:", matchedBookmarks.map(b => b.title))
+    // console.log("Bookmark Refs:")
+    // console.log(bookmarkRefs.current)
+    calculateFocusIndicators()
     checkTags()
     return rightClickMenu()
-  }, [currentSiteDomain, filteredBookmarks, setContextMenu, search, allTags])
+  }, [currentSiteDomain, filteredBookmarks, setContextMenu, search, allTags, openId, mode])
 
 
   return (
-    <div className={`bg-[#111111] overflow-auto ${className} h-full pr-2 pt-2 pl-2 hover-scrollbar`}
-          >
-      <div className='w-full flex flex-col gap-1.25'>
-        {filteredBookmarks.length === 0 ? (
-          <div className='text-[#b2b2b2] text-[13px] italic'
-                onContextMenu={(e) => {
-                  e.preventDefault()
-                }}>No bookmarks found..</div>
-        ) : mode === 'domain' ? (
-          Object.entries(groupedBookmarks).map(([domainGroup, items]) => (
-            <div key={domainGroup} className="flex flex-col gap-1.5 mb-3">
-              <div className='flex items-center gap-2 opacity-60 px-1'>
-                <img 
-                  src={`https://www.google.com/s2/favicons?sz=64&domain=${domainGroup}`} 
-                  className="w-3 h-3" 
-                  alt="" 
-                />
-                <span className="text-[9px] font-black uppercase tracking-normal text-[#c9c9c9]">
-                  {domainGroup} — {items.length} Items
-                </span>
-                <div className="h-px flex-1 bg-[#534B52]"></div>
+    <div ref={containerRef} 
+          onScroll={calculateFocusIndicators}
+          className={`bg-[#111111] relative overflow-auto ${className} h-full pr-2 pt-2 pl-2 hover-scrollbar`}>
+
+        {
+          mode === "focus" &&
+          (focusIndicators.above > 0 || focusIndicators.below > 0) && (
+            <div className={`fixed ${open ? 'bottom-58' : 'bottom-4'} right-3 -translate-y-1/5 flex flex-col items-center gap-0.75 z-9999 animate-pulse transition-all ease-in-out duration-250`}>
+
+              {focusIndicators.above > 0 && (
+                <button
+                  className="w-6 h-5 rounded-lg border border-zinc-700 bg-[#1a1a1a] hover:bg-[#252525] text-white flex items-center justify-center transition-all text-[15px]"
+                ><i className="ri-arrow-up-s-fill"></i>
+                </button>
+              )}
+
+              <div className="px-2 py-0.5 rounded-lg border-[1.5px] font-bold border-[#db00b6] bg-[#111111] text-[#db00b6] text-[12px]">
+                {focusIndicators.above + 1}/
+                {focusIndicators.above + focusIndicators.below + 1}
               </div>
 
-              {items.map((bookmark) => (
-                <BookmarkItem
-                    key={bookmark.id}
-                    bookmark={bookmark}
-                    openId={openId}
-                    handleToggle={handleToggle}
-                    mode={mode}
-                    domain={currentSiteDomain} 
-                    useBrandColor={useBrandColor}
-                    folderMap={folderMap}
-                    editingId={editingId}
-                    setEditingId={setEditingId}
-                    selectedProfile={selectedProfile}
-                    setOpenId={setOpenId}
-                    setIsPosting={setIsPosting}
-                    isvaultOpen={isvaultOpen}
-                    onRightClick={(e) => {
-                          e.preventDefault();
-                          setContextMenu({
-                            x: e.clientX,
-                            y: e.clientY,
-                            bookmark
-                          });
-                        }}
-                  
-                />
-              ))}
+              {focusIndicators.below > 0 && (
+                <button
+                  className="w-6 h-5 rounded-lg border border-zinc-700 bg-[#1a1a1a] hover:bg-[#252525] text-white flex items-center justify-center transition-all text-[15px]"
+                ><i className="ri-arrow-down-s-fill"></i>
+                </button>
+              )}
+
             </div>
-          ))
-        ) : (
-          filteredBookmarks.map((bookmark) => (
-            <BookmarkItem
-              key={bookmark.id}
-              bookmark={bookmark}
-              openId={openId}
-              handleToggle={handleToggle}
-              mode={mode}
-              domain={currentSiteDomain}
-              useBrandColor={useBrandColor}
-              folderMap={folderMap}
-              editingId={editingId}
-              setEditingId={setEditingId}
-              selectedProfile={selectedProfile}
-              setOpenId={setOpenId}
-              setIsPosting={setIsPosting}
-              isvaultOpen={isvaultOpen}
-              onRightClick={(e) => {
-                  e.preventDefault()
-                  setContextMenu({
-                    x: e.clientX,
-                    y: e.clientY,
-                    bookmark
-                  });
-                }}
+          )
+        }
 
-            />
-          ))
-        )}
-      </div>
-     { contextMenu && (
-        <div
-            className='custom-context-menu fixed cursor-pointer z-100 bg-[#2d2d2d] b order border-[#555] rounded-md shadow-l overflow-hidden text-[11px] 
-                    text-white flex flex-col w-24'
-            style={{
-                left: contextMenu.x,
-                top: contextMenu.y
-            }}
-          >
-            <button className='w-full text-left px-2 py-0.75 hover:bg-[#404040] cursor-pointer'
-                onClick={()=>{
-                    setEditingId(
-                        contextMenu.bookmark.id
-                    )
-                    setOpenId(
-                        contextMenu.bookmark.id
-                    )
-                    setContextMenu(null)
+          <div className='w-full flex flex-col gap-1.25'>
+            {filteredBookmarks.length === 0 ? (
+              <div className='text-[#b2b2b2] text-[13px] italic'
+                    onContextMenu={(e) => {
+                      e.preventDefault()
+                    }}>No bookmarks found..</div>
+            ) : mode === 'domain' ? (
+              Object.entries(groupedBookmarks).map(([domainGroup, items]) => (
+                <div key={domainGroup} className="flex flex-col gap-1.5 mb-3">
+                  <div className='flex items-center gap-2 opacity-60 px-1'>
+                    <img 
+                      src={`https://www.google.com/s2/favicons?sz=64&domain=${domainGroup}`} 
+                      className="w-3 h-3" 
+                      alt="" 
+                    />
+                    <span className="text-[9px] font-black uppercase tracking-normal text-[#c9c9c9]">
+                      {domainGroup} — {items.length} Items
+                    </span>
+                    <div className="h-px flex-1 bg-[#534B52]"></div>
+                  </div>
+
+                  {items.map((bookmark) => (
+                    <BookmarkItem
+                        key={bookmark.id}
+                        bookmark={bookmark}
+                        openId={openId}
+                        handleToggle={handleToggle}
+                        mode={mode}
+                        domain={currentSiteDomain} 
+                        useBrandColor={useBrandColor}
+                        folderMap={folderMap}
+                        editingId={editingId}
+                        setEditingId={setEditingId}
+                        selectedProfile={selectedProfile}
+                        setOpenId={setOpenId}
+                        setIsPosting={setIsPosting}
+                        isvaultOpen={isvaultOpen}
+                        registerRef={(el) => {
+                          bookmarkRefs.current[bookmark.id] = el
+                        }}
+                        onRightClick={(e) => {
+                              e.preventDefault();
+                              setContextMenu({
+                                x: e.clientX,
+                                y: e.clientY,
+                                bookmark
+                              });
+                            }}
+                      
+                    />
+                  ))}
+                </div>
+              ))
+            ) : (
+              filteredBookmarks.map((bookmark) => (
+                <BookmarkItem
+                  key={bookmark.id}
+                  bookmark={bookmark}
+                  openId={openId}
+                  handleToggle={handleToggle}
+                  mode={mode}
+                  domain={currentSiteDomain}
+                  useBrandColor={useBrandColor}
+                  folderMap={folderMap}
+                  editingId={editingId}
+                  setEditingId={setEditingId}
+                  selectedProfile={selectedProfile}
+                  setOpenId={setOpenId}
+                  setIsPosting={setIsPosting}
+                  isvaultOpen={isvaultOpen}
+                  registerRef={(el) => {
+                    bookmarkRefs.current[bookmark.id] = el
                   }}
-                >Edit
-            </button>
+                  onRightClick={(e) => {
+                      e.preventDefault()
+                      setContextMenu({
+                        x: e.clientX,
+                        y: e.clientY,
+                        bookmark
+                      });
+                    }}
+                />
+              ))
+            )}
+          </div>
+      { contextMenu && (
+          <div
+              className='custom-context-menu fixed cursor-pointer z-100 bg-[#2d2d2d] b order border-[#555] rounded-md shadow-l overflow-hidden text-[11px] 
+                      text-white flex flex-col w-24'
+              style={{
+                  left: contextMenu.x,
+                  top: contextMenu.y
+              }}
+            >
+              <button className='w-full text-left px-2 py-0.75 hover:bg-[#404040] cursor-pointer'
+                  onClick={()=>{
+                      setEditingId(
+                          contextMenu.bookmark.id
+                      )
+                      setOpenId(
+                          contextMenu.bookmark.id
+                      )
+                      setContextMenu(null)
+                    }}
+                  >Edit
+              </button>
 
-            <button className='w-full text-left px-2 py-0.75 hover:bg-red-600 cursor-pointer'
-                onClick={()=>{
-                    // console.log("Delete CLICKED")
-                    // console.log(contextMenu)
-                    deleteBookmark(contextMenu.bookmark.id)
-                }}
-                >Delete
-            </button>
+              <button className='w-full text-left px-2 py-0.75 hover:bg-red-600 cursor-pointer'
+                  onClick={()=>{
+                      // console.log("Delete CLICKED")
+                      // console.log(contextMenu)
+                      deleteBookmark(contextMenu.bookmark.id)
+                  }}
+                  >Delete
+              </button>
 
-            <button className='w-full text-left px-2 py-0.75 hover:bg-[#404040] cursor-pointer'
-                onClick={async()=>{
-                  setContextMenu(null)
-                  await navigator.clipboard.writeText(
-                        contextMenu.bookmark.url
-                    )
-                    setCopied(true)
-                    setTimeout(()=>{
-                        setCopied(false)
-                    },1500)
-                }}
-              >Copy Link
-            </button>
+              <button className='w-full text-left px-2 py-0.75 hover:bg-[#404040] cursor-pointer'
+                  onClick={async()=>{
+                    setContextMenu(null)
+                    await navigator.clipboard.writeText(
+                          contextMenu.bookmark.url
+                      )
+                      setCopied(true)
+                      setTimeout(()=>{
+                          setCopied(false)
+                      },1500)
+                  }}
+                >Copy Link
+              </button>
 
         </div>)}
     </div>

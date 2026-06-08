@@ -28,6 +28,7 @@ const RightPanel = ({search, device, folderData, setFolderData, bookmarks, setBo
                           onToggle={() => setOpen(!open)} 
                           search = {search}
                           mode = {mode}
+                          open={open}
                           folderData = {folderData}
                           setFolderData = {setFolderData}
                           bookmarks = {bookmarks}
