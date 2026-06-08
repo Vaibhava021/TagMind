@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { registerUser } from '../api/authApi'
+import { registerUser } from '../../api/authApi'
 
 export default function RegisterModal({fetchData,onClose}){
 

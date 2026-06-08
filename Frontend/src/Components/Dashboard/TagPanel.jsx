@@ -1,5 +1,5 @@
 import React from 'react'
-import { useChromeStorage } from '../Hooks/useChromeStorage'
+import { useChromeStorage } from '../../Hooks/useChromeStorage'
 
 const TagPanel = ({selectedProfile, recentTags, setSearch, isvaultOpen}) => {
   const storageKey =`${selectedProfile}_${isvaultOpen ? 'vault' : 'normal'}`

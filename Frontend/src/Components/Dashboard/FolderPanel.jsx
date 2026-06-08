@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useMemo, useState } from 'react'
 import { FolderItem } from './FolderItem';
-import { DomainContext } from '../context/DomainContext';
+import { DomainContext } from '../../context/DomainContext';
 import axios from 'axios'
 
 

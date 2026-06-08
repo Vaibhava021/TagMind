@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react'
-import { setVaultPassword, unlockVault } from '../api/vaultAPI'
+import { setVaultPassword, unlockVault } from '../../api/vaultAPI'
 
 
 const VaultModal = ({ onClose, selectedProfile, accounts, isvaultOpen, setIsvaultOpen }) => {

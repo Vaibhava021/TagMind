@@ -1,7 +1,8 @@
 import React, { useContext, useEffect } from 'react'
 import { useState } from 'react'
 import Switch from 'react-switch'
-import { DomainContext } from '../context/DomainContext'
+// import { DomainContext } from '../../context/DomainContext'
+import { DomainContext } from '../../context/DomainContext'
 
 
 const FocusButton = ({enabled, onToggle, useBrandColor, setuseBrandColor,}) => {

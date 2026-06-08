@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useMemo, useState } from 'react'
-import { DomainContext } from '../context/DomainContext'
+import { DomainContext } from '../../context/DomainContext'
 import BookmarkItem from './BookmarkItem';
-import { useChromeStorage } from '../Hooks/useChromeStorage';
+import { useChromeStorage } from '../../Hooks/useChromeStorage';
 import axios from 'axios';
 
 export const BookmarkView = ({ className, device, mode, folderData, bookmarks, useBrandColor, selectedFolder, setSelectedFolder, search, isPosting, setIsPosting, selectedProfile, 

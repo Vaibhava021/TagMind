@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
-import { SearchSyncBar } from '../Components/SearchSyncBar'
-import Leftpanel from '../Components/Leftpanel';
-import RightPanel from '../Components/RightPanel';
+import { SearchSyncBar } from '../Components/Dashboard/SearchSyncBar.jsx'
+import Leftpanel from '../Components/Dashboard/Leftpanel.jsx';
+import RightPanel from '../Components/Dashboard/RightPanel.jsx';
 // import {folders, savedBookmarks} from "../Data/data.js"
 import { useChromeStorage } from '../Hooks/useChromeStorage.js';
 

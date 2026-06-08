@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import RegisterModal from '../Components/RegisterModal'
+import RegisterModal from '../Components/Dashboard/RegisterModal'
 import { getGoogleToken } from '../api/googleExtensionAuth';
 import { googleLogin } from '../api/googleAuth';
 

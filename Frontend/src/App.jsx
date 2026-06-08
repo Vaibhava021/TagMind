@@ -82,8 +82,7 @@ const App = () => {
           }
         })()}
       </DomainProvider>
-    </div>
-    
+    </div> 
   )
 }
 
