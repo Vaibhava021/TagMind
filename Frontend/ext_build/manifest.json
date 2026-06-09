@@ -1,0 +1,48 @@
+{
+  "manifest_version": 3,
+  "name": "Bookmark Companion",
+  "version": "1.0.0",
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' http://localhost:5173; object-src 'self'; connect-src 'self' http://localhost:5173 ws://localhost:5173 http://127.0.0.1:8000"
+  },
+  "description": "A cross-platform bookmark manager.",
+  "permissions": [
+    "tabs",
+    "storage",
+    "identity"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Open Bookmarks"
+  },
+  "host_permissions": [
+    "http://localhost/*",
+    "http://localhost:5173/*",
+    "https://www.google.com/s2/favicons*",
+    "https://t1.gstatic.com/*",
+    "https://t2.gstatic.com/*",
+    "https://t3.gstatic.com/*",
+    "https://www.google.com/*"
+  ],
+  "icons": {
+    "16": "vite.svg",
+    "48": "vite.svg",
+    "128": "vite.svg"
+  },
+  "background": {
+    "service_worker": "service-worker-loader.js",
+    "type": "module"
+  },
+  "web_accessible_resources": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "resources": [
+        "**/*",
+        "*"
+      ],
+      "use_dynamic_url": false
+    }
+  ]
+}

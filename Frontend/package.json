@@ -4,9 +4,9 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev:web": "vite --config vite.config.js",
+    "build:web": "vite build --config vite.config.js",
     "dev:ext": "vite --config vite.ext.config.js",
-    "build": "vite build",
     "build:ext": "vite build --config vite.ext.config.js",
     "lint": "eslint .",
     "preview": "vite preview"

@@ -12,16 +12,18 @@ export default defineConfig({
     crx({ manifest }),
     tailwindcss(),
   ],
+  build:{
+    outDir: 'ext_build'
+  },
   server: {
-    // Lock the port to 5173
     host: 'localhost',
     port: 5173,
     strictPort: true,
     hmr: {
-      host: 'localhost',
-      // port: 5173,
-      // protocol: 'ws',
-    },
+        host: 'localhost',
+        port: 5173,
+        protocol: 'ws' // Crucial for CRXJS development mode
+      },
     cors: true 
   }
   

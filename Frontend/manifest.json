@@ -10,7 +10,7 @@
                   "storage",
                   "identity"],
   "action": {
-    "default_popup": "index.html",
+    "default_popup": "popup.html",
     "default_title": "Open Bookmarks"
   },
   "host_permissions": [

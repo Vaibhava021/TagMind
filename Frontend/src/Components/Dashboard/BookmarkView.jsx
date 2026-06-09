@@ -22,7 +22,7 @@ export const BookmarkView = ({ className, device, mode, folderData, bookmarks, u
   // For arrow indication 
   const containerRef = useRef(null)
   const bookmarkRefs = useRef({})
-  const [focusIndicators, setFocusIndicators] = useState({above: 0, below: 0})
+  const [focusIndicators, setFocusIndicators] = useState({above: 0, below: 0, visible: 0})
 
 
   const parseSearch = (search) => {
@@ -194,57 +194,110 @@ export const BookmarkView = ({ className, device, mode, folderData, bookmarks, u
     }
   }
 
+  // const calculateFocusIndicators = () => {
+  //    if(mode !== 'focus')
+  //     {
+  //       setFocusIndicators({
+  //         above: 0,
+  //         below: 0
+  //       })
+  //       return
+  //     }
+
+  //   if (!containerRef.current)
+  //     return
+
+  //   const containerRect = containerRef.current.getBoundingClientRect()
+  //   let above = 0
+  //   let below = 0
+    
+
+  //   matchedBookmarks.forEach(bookmark => {
+  //     const element = bookmarkRefs.current[bookmark.id]
+  //     if (!element)
+  //       return
+  //     const rect = element.getBoundingClientRect()
+  //     if (rect.bottom < containerRect.top) {
+  //       above++
+  //     }
+  //     else if (rect.top > containerRect.bottom) {
+  //       below++
+  //     }
+  //   })
+
+  //   // console.log({above,below})
+  //   setFocusIndicators({above,below})
+  // }
+
   const calculateFocusIndicators = () => {
-     if(mode !== 'focus')
-      {
-        setFocusIndicators({
-          above: 0,
-          below: 0
-        })
-        return
-      }
 
-    if (!containerRef.current)
-      return
-
-    const containerRect = containerRef.current.getBoundingClientRect()
-
-    let above = 0
-    let below = 0
-
-    matchedBookmarks.forEach(bookmark => {
-      const element = bookmarkRefs.current[bookmark.id]
-      if (!element)
-        return
-      const rect = element.getBoundingClientRect()
-      if (rect.bottom < containerRect.top) {
-        above++
-      }
-      else if (rect.top > containerRect.bottom) {
-        below++
-      }
+  if (mode !== 'focus') {
+    setFocusIndicators({
+      above: 0,
+      below: 0
     })
-
-    // console.log({above,below})
-    setFocusIndicators({above,below})
+    return
   }
+
+  if (!containerRef.current)
+    return
+
+  const containerRect = containerRef.current.getBoundingClientRect()
+
+  let above = 0
+  let below = 0
+  let visible = 0
+
+  matchedBookmarks.forEach(bookmark => {
+
+    const element = bookmarkRefs.current[bookmark.id]
+    if (!element)
+      return
+    const rect = element.getBoundingClientRect()
+
+    const isVisible =
+      rect.bottom > containerRect.top &&
+      rect.top < containerRect.bottom
+
+    if (isVisible) {
+      visible++
+    }
+    else if (rect.bottom <= containerRect.top) {
+      above++
+    }
+    else if (rect.top >= containerRect.bottom) {
+      below++
+    }
+
+  })
+
+  console.log({
+    totalMatches: matchedBookmarks.length,
+    above,
+    visible,
+    below,
+    sum: above + visible + below
+  })
+
+  setFocusIndicators({above, below, visible})
+}
 
   useEffect(()=>{
     // console.log("Matched Bookmarks:", matchedBookmarks)
     // console.log("Matched Bookmarks:", matchedBookmarks.map(b => b.title))
     // console.log("Bookmark Refs:")
     // console.log(bookmarkRefs.current)
+
     calculateFocusIndicators()
     checkTags()
     return rightClickMenu()
-  }, [currentSiteDomain, filteredBookmarks, setContextMenu, search, allTags, openId, mode])
+  }, [currentSiteDomain, filteredBookmarks, setContextMenu, search, allTags, openId, mode, open])
 
 
   return (
     <div ref={containerRef} 
           onScroll={calculateFocusIndicators}
           className={`bg-[#111111] relative overflow-auto ${className} h-full pr-2 pt-2 pl-2 hover-scrollbar`}>
-
         {
           mode === "focus" &&
           (focusIndicators.above > 0 || focusIndicators.below > 0) && (
@@ -252,23 +305,24 @@ export const BookmarkView = ({ className, device, mode, folderData, bookmarks, u
 
               {focusIndicators.above > 0 && (
                 <button
-                  className="w-6 h-5 rounded-lg border border-zinc-700 bg-[#1a1a1a] hover:bg-[#252525] text-white flex items-center justify-center transition-all text-[15px]"
+                  className="w-6 h-5 rounded-lg border border-zinc-700 bg-[#1a1a1a] hover:bg-[#252525] text-white flex items-center justify-center transition-all text-[15px] cursor-pointer
+                      hover:animate-none"
                 ><i className="ri-arrow-up-s-fill"></i>
                 </button>
               )}
 
               <div className="px-2 py-0.5 rounded-lg border-[1.5px] font-bold border-[#db00b6] bg-[#111111] text-[#db00b6] text-[12px]">
-                {focusIndicators.above + 1}/
-                {focusIndicators.above + focusIndicators.below + 1}
+                  {focusIndicators.visible}/
+                  {matchedBookmarks.length}
               </div>
 
               {focusIndicators.below > 0 && (
                 <button
-                  className="w-6 h-5 rounded-lg border border-zinc-700 bg-[#1a1a1a] hover:bg-[#252525] text-white flex items-center justify-center transition-all text-[15px]"
+                  className="w-6 h-5 rounded-lg border border-zinc-700 bg-[#1a1a1a] hover:bg-[#252525] text-white flex items-center justify-center transition-all text-[15px] cursor-pointer
+                      hover:animate-none"
                 ><i className="ri-arrow-down-s-fill"></i>
                 </button>
               )}
-
             </div>
           )
         }
@@ -322,43 +376,43 @@ export const BookmarkView = ({ className, device, mode, folderData, bookmarks, u
                               });
                             }}
                       
+                        />
+                      ))}
+                    </div>
+                  ))
+                ) : (
+                  filteredBookmarks.map((bookmark) => (
+                    <BookmarkItem
+                      key={bookmark.id}
+                      bookmark={bookmark}
+                      openId={openId}
+                      handleToggle={handleToggle}
+                      mode={mode}
+                      domain={currentSiteDomain}
+                      useBrandColor={useBrandColor}
+                      folderMap={folderMap}
+                      editingId={editingId}
+                      setEditingId={setEditingId}
+                      selectedProfile={selectedProfile}
+                      setOpenId={setOpenId}
+                      setIsPosting={setIsPosting}
+                      isvaultOpen={isvaultOpen}
+                      registerRef={(el) => {
+                        bookmarkRefs.current[bookmark.id] = el
+                      }}
+                      onRightClick={(e) => {
+                          e.preventDefault()
+                          setContextMenu({
+                            x: e.clientX,
+                            y: e.clientY,
+                            bookmark
+                          });
+                        }}
                     />
-                  ))}
-                </div>
-              ))
-            ) : (
-              filteredBookmarks.map((bookmark) => (
-                <BookmarkItem
-                  key={bookmark.id}
-                  bookmark={bookmark}
-                  openId={openId}
-                  handleToggle={handleToggle}
-                  mode={mode}
-                  domain={currentSiteDomain}
-                  useBrandColor={useBrandColor}
-                  folderMap={folderMap}
-                  editingId={editingId}
-                  setEditingId={setEditingId}
-                  selectedProfile={selectedProfile}
-                  setOpenId={setOpenId}
-                  setIsPosting={setIsPosting}
-                  isvaultOpen={isvaultOpen}
-                  registerRef={(el) => {
-                    bookmarkRefs.current[bookmark.id] = el
-                  }}
-                  onRightClick={(e) => {
-                      e.preventDefault()
-                      setContextMenu({
-                        x: e.clientX,
-                        y: e.clientY,
-                        bookmark
-                      });
-                    }}
-                />
-              ))
-            )}
-          </div>
-      { contextMenu && (
+                  ))
+                )}
+              </div>
+          { contextMenu && (
           <div
               className='custom-context-menu fixed cursor-pointer z-100 bg-[#2d2d2d] b order border-[#555] rounded-md shadow-l overflow-hidden text-[11px] 
                       text-white flex flex-col w-24'

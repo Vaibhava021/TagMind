@@ -21,6 +21,13 @@ const BookmarkItem = ({bookmark, index, openId, setOpenId, mode, folderMap, doma
 
     useEffect(() => {
       // console.log("Tags:",bookmark.tag_names)
+    //   console.log({
+    //   title: bookmark.title,
+    //   top: rect.top,
+    //   bottom: rect.bottom,
+    //   containerTop: containerRect.top,
+    //   containerBottom: containerRect.bottom
+    // })
     }, []);
 
   return (
