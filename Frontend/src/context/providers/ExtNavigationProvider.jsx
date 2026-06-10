@@ -1,25 +1,31 @@
-import React, { useState, useCallback } from 'react';
-import { NavigationContext } from '../NavigationContext';
+import { useState, useCallback, useEffect } from 'react'
+import { NavigationContext } from '../NavigationContext'
 
 export function ExtNavigationProvider({ children }) {
-  const [currentScreen, setCurrentScreen] = useState('dashboard');
-  
-  // array history tracker so going back works inside the extension popup
-  const [history, setHistory] = useState([]);
+  const [currentScreen, setCurrentScreen] = useState('profiles')
+  const [history, setHistory] = useState([])
 
+  // useCallback with empty deps — navigate never becomes stale
   const navigate = useCallback((screen) => {
-    // push current screen into the history array before transitioning
-    setHistory(prev => [...prev, currentScreen]);
-    setCurrentScreen(screen);
-  }, [currentScreen]);
+    console.log('navigate called with:', screen)
+    setCurrentScreen(prev => {
+      console.log('prev screen:', prev, '→ new screen:', screen)
+      setHistory(h => [...h, prev])
+      return screen
+    })
+  }, [])
 
   const goBack = useCallback(() => {
-    if (history.length === 0) return;
-    
-    const previous = history[history.length - 1];
-    setHistory(prev => prev.slice(0, -1)); // remove the last element
-    setCurrentScreen(previous);
-  }, [history]);
+    setHistory(prev => {
+      if (prev.length === 0) return prev
+      const previous = prev[prev.length - 1]
+      setCurrentScreen(previous)
+      return prev.slice(0, -1)
+    })
+  }, [])  // ← empty array
+  useEffect(() => {
+  // console.log('ExtProvider context object:', NavigationContext)
+  }, [])
 
   return (
     <NavigationContext.Provider value={{
@@ -30,5 +36,5 @@ export function ExtNavigationProvider({ children }) {
     }}>
       {children}
     </NavigationContext.Provider>
-  );
+  )
 }

@@ -1,88 +1,93 @@
-import React, { useEffect, useState } from 'react'
-import Dashboard from './Pages/Dashboard'
-import { DomainProvider } from './context/DomainContext'
-import { useContext } from "react";
-import AppPassword from './Pages/AppPassword';
-import ProfileSelector from './Pages/Profiles';
-import Login from './Pages/Login';
-import LoggingOut from './Pages/LoggingOut';
-import { useSessionAuth } from './Hooks/useChromeStorage';
-import GoogleLogin from './Pages/GoogleLogin';
+import { useEffect, useState, useRef } from 'react'
+import { useNavigation } from './context/NavigationContext'
+import Dashboard       from './Pages/Dashboard'
+import ProfileSelector from './Pages/Profiles'
+import Login           from './Pages/Login'
+import GoogleLogin     from './Pages/GoogleLogin'
+import LoggingOut      from './Pages/LoggingOut'
+import { useSessionAuth } from './Hooks/useChromeStorage'
+import { NavigationContext } from './context/NavigationContext'
+
 
 const App = () => {
-  const [screen, setscreen] = useState('profiles')
-  const [selectedProfile, setSelectedProfile] = useState(null) 
-  
-  // const [selectedProfile, setSelectedProfile] = useState(1) 
-  const [accounts, setAccounts] = useState([])
-  const {isAuthenticated, setIsAuthenticated} = useSessionAuth()
+  const { currentScreen, navigate } = useNavigation()
 
-  // log state 
-  const [LogState, setLogState] = useState(null)
+  const [selectedProfile, setSelectedProfile] = useState(null)
+  const profileRef = useRef(null)                              
 
-  // Vault mode 
-  const [isvaultOpen, setIsvaultOpen] = useState(false)
-    
-  const screens = {
-      profiles: () =>  (<ProfileSelector
-                            selectedProfile={selectedProfile}
-                            accounts={accounts}
-                            setAccounts={setAccounts}
-                            setSelectedProfile={setSelectedProfile}
-                            setLogState={setLogState}
-                      />),
-      password: () =>  (<AppPassword /> ),
-      dashboard: () => (<Dashboard
-                            selectedProfile={selectedProfile}
-                            setSelectedProfile={setSelectedProfile}
-                            accounts={accounts}
-                            setAccounts={setAccounts}
-                            setLogState={setLogState}
-                            LogState={LogState}
-                            isvaultOpen={isvaultOpen}
-                            setIsvaultOpen={setIsvaultOpen}
-                      />),
-      login: () => (<Login />) ,
-      logging_out: () => (<LoggingOut 
-                            setSelectedProfile={setSelectedProfile}
-                            setLogState={setLogState}
-                            setIsvaultOpen={setIsvaultOpen}
-                          />)
+  const [accounts, setAccounts]                 = useState([])
+  const { isAuthenticated, setIsAuthenticated } = useSessionAuth()
+  const [LogState, setLogState]                 = useState(null)
+  const [isvaultOpen, setIsvaultOpen]           = useState(false)
 
-  };
+  // updates both the ref (sync) and state (async)
+  const handleSetSelectedProfile = (id) => {
+    profileRef.current = id
+    setSelectedProfile(id)
+  }
 
-  useEffect(()=> {
-    // console.log("App Profile:", selectedProfile)
+  useEffect(() => {
     chrome.storage.session.get('selectedProfile').then(result => {
-      if(result.selectedProfile){
-        setSelectedProfile(result.selectedProfile)
+      if (result.selectedProfile) {
+        handleSetSelectedProfile(result.selectedProfile)
+        navigate('dashboard')
       }
     })
 
     chrome.storage.session.get('vaultOpen').then(result => {
-      if(result.vaultOpen){
+      if (result.vaultOpen) {
         setIsvaultOpen(true)
       }
     })
-  },[])
+
+    // console.log('App context object:', NavigationContext)
+  }, [])
+
+
+  const profileProps = {
+    selectedProfile,
+    setSelectedProfile: handleSetSelectedProfile,  
+    accounts,
+    setAccounts,
+  }
+
+  const screens = {
+    profiles: (
+      <ProfileSelector
+        {...profileProps}
+      />
+    ),
+    login: <Login />,
+    'google-login': <GoogleLogin />,
+    
+    dashboard: selectedProfile ? (
+      <Dashboard
+        {...profileProps}
+        setLogState={setLogState}
+        LogState={LogState}
+        isvaultOpen={isvaultOpen}
+        setIsvaultOpen={setIsvaultOpen}
+      />
+    ) : (
+      <ProfileSelector
+        {...profileProps}
+      />
+    ),
+}
+
+  const resolvedScreen = screens[currentScreen] ? currentScreen : 'profiles'
 
   return (
-    <div>
-      <DomainProvider>
-        {(() => {
-          if(selectedProfile){
-            return (
-            <>
-            {screens['dashboard']()}
-            {LogState==='logging_out' && screens['logging_out']()}
-            </>
-            )
-          } else {
-            return screens['profiles']();
-          }
-        })()}
-      </DomainProvider>
-    </div> 
+  <div>
+    {screens[resolvedScreen]}
+    {LogState === 'logging_out' && (
+      <LoggingOut
+        setSelectedProfile={handleSetSelectedProfile}
+        setLogState={setLogState}
+        setIsvaultOpen={setIsvaultOpen}
+      />
+    )}
+  </div>
   )
 }
 

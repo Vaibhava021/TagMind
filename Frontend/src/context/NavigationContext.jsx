@@ -30,3 +30,16 @@
 
 // // clean hook — components import this, never the context directly
 // export const useNavigation = () => useContext(NavigationContext)
+
+
+import { createContext, useContext } from 'react'
+
+// all valid screen names — add here as you build new pages
+export const NavigationContext = createContext({
+  currentScreen: 'profiles',
+  navigate: () => {},
+  goBack: () => {},
+  canGoBack: false,
+})
+
+export const useNavigation = () => useContext(NavigationContext)

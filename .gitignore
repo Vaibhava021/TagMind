@@ -3,6 +3,8 @@
 /frontend/dist
 /frontend/.env
 
+/frontend/web_build
+/frontend/ext_build
 
 #Django
 /backend/.venv
@@ -12,3 +14,4 @@
 
 #Personal files / extra for development
 something.txt
+

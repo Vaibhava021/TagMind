@@ -68,8 +68,8 @@ import { useChromeStorage } from '../Hooks/useChromeStorage.js';
     //     "DASHBOARD PROFILE:",
     //     selectedProfile
     // )
-      console.log(isvaultOpen)
-      console.log(`${import.meta.env.VITE_API_BASE_URL}bookmarks/bookmarks/?profile=${selectedProfile}&vault=${isvaultOpen}`)
+      // console.log(isvaultOpen)
+      // console.log(`${import.meta.env.VITE_API_BASE_URL}bookmarks/bookmarks/?profile=${selectedProfile}&vault=${isvaultOpen}`)
       fetchData()
     }, [isPosting, selectedProfile, isvaultOpen])
 

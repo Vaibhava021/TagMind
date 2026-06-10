@@ -1,6 +1,9 @@
 import React from 'react'
+import { useNavigation } from '../context/NavigationContext';
 
 const LoggingOut = ({setSelectedProfile, setLogState, setIsvaultOpen}) => {
+  const { navigate } = useNavigation();
+
   return (
         <div className="fixed inset-0 z-9999 flex items-center justify-center bg-black/50 backdrop-blur-xs select-none animate-fade-in">
         <div className="bg-[#262624] border border-[#534B52] p-5 rounded-xl w-65 text-center shadow-2xl text-white animate-scale-up">
@@ -23,6 +26,7 @@ const LoggingOut = ({setSelectedProfile, setLogState, setIsvaultOpen}) => {
                 }
                 setSelectedProfile(null);
                 setLogState("logged_out");
+                navigate('profiles')
               }}
               className="bg-[#ff292e] text-white text-[10.5px] font-bold px-3 py-1.5 rounded-md hover:bg-[#c10505] cursor-pointer"
                 >Logout

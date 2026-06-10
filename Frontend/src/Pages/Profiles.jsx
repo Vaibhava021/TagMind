@@ -2,16 +2,18 @@ import React, { useEffect, useState } from 'react';
 import RegisterModal from '../Components/Dashboard/RegisterModal'
 import { getGoogleToken } from '../api/googleExtensionAuth';
 import { googleLogin } from '../api/googleAuth';
+import { useNavigation } from '../context/NavigationContext';
 
-const ProfileSelector = ({selectedProfile, setSelectedProfile, accounts, setAccounts, setLogState}) => {
+
+const ProfileSelector = ({selectedProfile, setSelectedProfile, accounts, setAccounts,}) => {
   // State to track which account is currently selected
+  const {navigate} = useNavigation();
   const [selectedId, setSelectedId] = useState('');
   const [loading, setLoading] = useState(true)
   // const [authMode,setAuthMode] = useState('login')
   const [showRegister,setShowRegister] = useState(false)
 
   const handleGoogleLogin = async ()=>{
-
     try{
         const token = await getGoogleToken()
         console.log('Google Token:',token)
@@ -44,6 +46,7 @@ const ProfileSelector = ({selectedProfile, setSelectedProfile, accounts, setAcco
     }
 
     useEffect(() => {
+      
       fetchData();
     }, []);
 
@@ -100,11 +103,12 @@ const darkenColor = (hex,amount = 0.25) => {
                 setSelectedId(acc.id);
               }}
               onDoubleClick={(e) => {
-                e.stopPropagation();
-                // console.log("Settings:", acc.id)
-                chrome.storage.session.set({selectedProfile: acc.id})
+                e.stopPropagation()
+                chrome.storage.session.set({ selectedProfile: acc.id })
                 setSelectedProfile(acc.id)
-                setLogState("logged_in")
+                console.log('double click fired, acc.id:', acc.id)
+                // small timeout lets React flush the state before navigation evaluates
+                setTimeout(() => navigate('dashboard'), 0)
               }}
               className={`flex items-center p-3.5 rounded-xl cursor-pointer transition-all ease-in-out duration-120 ${
                 isActive
