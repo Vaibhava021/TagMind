@@ -141,15 +141,13 @@ export const BookmarkView = ({ className, device, mode, folderData, bookmarks, u
 
   const rightClickMenu = () => {
     const closeMenu = (e) => {
-      if (e.target.closest('.custom-context-menu'))
-        return;
-      setContextMenu(null);
-    };
-
-    window.addEventListener('click', closeMenu);
-    return () => {
-      window.addEventListener('click', closeMenu);
-    };
+    
+    if (e.target.closest('.custom-context-menu'))
+      return
+      setContextMenu(null)
+    }
+    window.addEventListener('mousedown', closeMenu)
+    return () => {window.removeEventListener('mousedown', closeMenu)}
   }
   
   const deleteBookmark = async (id) => {

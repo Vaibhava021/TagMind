@@ -91,17 +91,9 @@ const glowingFolderids = useMemo(() => {
     setIsPosting(true)
      try{
       const body = {
-          name:
-              toTitleCase(
-                  folderName
-              ),
-
-          user:
-              selectedProfile,
-            
+          name: toTitleCase(folderName),
+          user: selectedProfile,
           is_vault: isvaultOpen
-
-
     }
       const response = await axios.post(endpoint, body)
       // console.log("folder created")
@@ -121,10 +113,10 @@ const glowingFolderids = useMemo(() => {
         setContextmenu(null);
     };
   
-    window.addEventListener('click', closeMenu);
+    window.addEventListener('mousedown', closeMenu);
   
     return () => {
-        window.removeEventListener('click', closeMenu);
+        window.addEventListener('mousedown', closeMenu);
     };
   }
 
@@ -153,15 +145,15 @@ const glowingFolderids = useMemo(() => {
 
     const response = await axios.patch(
       `${endpoint}${id}/`,
-      {
-          name: editingName
-      },
-      {
-          params:{
-              profile:selectedProfile,
-              vault:isvaultOpen
-          }
-      }
+        {
+            name: editingName
+        },
+        {
+            params:{
+                profile:selectedProfile,
+                vault:isvaultOpen
+            }
+        }
     )
 
     console.log(

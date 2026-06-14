@@ -117,7 +117,7 @@ const BookmarkItem = ({bookmark, index, openId, setOpenId, mode, folderMap, doma
                                 </div>
                               )
                               }
-                                <div className='flex items-center gap-1.5 text-[#30302e] mt-auto mb-1.5 overflow-x-auto [ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'>
+                                <div className='flex items-center gap-1.5 text-[#30302e] mt-auto mb-1.5 overflow-x-auto [ms-overflow-style:none] scrollbar-none [&::-webkit-scrollbar]:hidden'>
                                 {
                                     bookmark.tag_names?.length > 0
                                     ? (
