@@ -113,10 +113,10 @@ const glowingFolderids = useMemo(() => {
         setContextmenu(null);
     };
   
-    window.addEventListener('mousedown', closeMenu);
+    window.removeEventListener('mousedown', closeMenu);
   
     return () => {
-        window.addEventListener('mousedown', closeMenu);
+        window.removeEventListener('mousedown', closeMenu);
     };
   }
 
@@ -182,7 +182,7 @@ const glowingFolderids = useMemo(() => {
           }
         }
       )
-      setContextmenu(false)
+      setContextmenu(null)
     } catch(err){
       console.error("Error deleting folder:", err)
     }
@@ -315,7 +315,7 @@ const glowingFolderids = useMemo(() => {
                 className='w-full text-left px-2 py-0.75
                           hover:bg-red-600 cursor-pointer'
                 onClick={()=>{
-                    // console.log("Delete", contextmenu.folder.id)
+                    console.log("Delete", contextmenu.folder.id)
                     deleteFolder(contextmenu.folder.id)
                     setContextmenu(null)
                 }}
