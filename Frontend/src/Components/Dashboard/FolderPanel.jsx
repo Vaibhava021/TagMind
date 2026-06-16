@@ -99,25 +99,11 @@ const glowingFolderids = useMemo(() => {
       // console.log("folder created")
       // console.log(response.data)
      } catch(err){
-        console.log(
-        err.response?.data
-    )
+        console.log(err.response?.data)
   }
     setFolderName('')
     setIsCreatingFolder(false)
     setIsPosting(false)
-  }
-
-  const righgtClickMenu = () => {
-    const closeMenu = () => {
-        setContextmenu(null);
-    };
-  
-    window.removeEventListener('mousedown', closeMenu);
-  
-    return () => {
-        window.removeEventListener('mousedown', closeMenu);
-    };
   }
 
   const updateFolder = async(id)=>{
@@ -156,10 +142,7 @@ const glowingFolderids = useMemo(() => {
         }
     )
 
-    console.log(
-        "PATCH RESPONSE:",
-        response.data
-    ) 
+    console.log("PATCH RESPONSE:", response.data) 
 }
 
   // System Folder flags to avoid changes 
@@ -188,10 +171,24 @@ const glowingFolderids = useMemo(() => {
     }
     setIsPosting(false)
   }
-  
+
   useEffect(() => {
-    righgtClickMenu()
-}, []);
+
+  const closeMenu = (e) => {
+    if (
+      e.target.closest('.custom-context-menu')
+    ) {
+      return
+    }
+    setContextmenu(null)
+  }
+    document.addEventListener('mousedown',closeMenu)
+
+    return () => {
+      document.removeEventListener('mousedown', closeMenu)
+    }
+
+  }, [])
 
   return (
     <div className=' mb-0.2 flex flex-col min-h-0 h-full'>
@@ -278,14 +275,7 @@ const glowingFolderids = useMemo(() => {
         contextmenu && !isSystemFolder && (
 
         <div
-            className='fixed z-100 bg-[#2d2d2d]
-                      border border-[#555]
-                      rounded-md shadow-lg
-                      overflow-hidden text-[11px]
-                      text-white
-                      flex flex-col
-                      w-15
-                      '
+            className='custom-context-menu fixed z-100 bg-[#2d2d2d] border border-[#555] rounded-md shadow-lg overflow-hidden text-[11px] text-white flex flex-col w-15'
 
             style={{
                 left: contextmenu.x,

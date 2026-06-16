@@ -30,7 +30,7 @@ export const BookmarkView = ({ className, device, mode, folderData, bookmarks, u
 
     const trimmed = search.toLowerCase().trim();
 
-    const prefixes = ['tags:', 'desc:', 'url:'];
+    const prefixes = ['tags:', 'desc:', 'url:', ];
 
     for (let prefix of prefixes) {
       if (trimmed.startsWith(prefix)) {
@@ -44,19 +44,18 @@ export const BookmarkView = ({ className, device, mode, folderData, bookmarks, u
     return { type: 'title', value: trimmed };
   }
 
+  // Search Filtering 
   const filteredBookmarks = useMemo(() => {
     const {type,value} = parseSearch(search.toLowerCase())
     const result = bookmarks.filter(b => {
-
-    const folderMatch =
-        selectedFolder === 'all' ||
-        (
-            selectedFolder === 'none'
-            ? b.folder === null
-            : String(b.folder) === String(selectedFolder)
-        )
-    const deviceMatch =
-        device === 'all' || b.device_type === device
+      const folderMatch =
+          selectedFolder === 'all' ||
+          (
+              selectedFolder === 'none'
+              ? b.folder === null
+              : String(b.folder) === String(selectedFolder)
+          )
+    const deviceMatch = device === 'all' || b.device_type === device
 
     let searchMatch = true
     if(search){
@@ -76,11 +75,14 @@ export const BookmarkView = ({ className, device, mode, folderData, bookmarks, u
         }
         else if(type === 'desc')
         {
-            searchMatch =b.description?.toLowerCase().includes(value)
+            searchMatch = b.description?.toLowerCase().includes(value)
+        }
+        else if(type === 'url')
+        {
+            searchMatch = b.url?.toLowerCase().includes(value)
         }
     }
-    return (folderMatch && deviceMatch && searchMatch
-    )
+    return (folderMatch && deviceMatch && searchMatch)
 })
 
 // ---------- SORTING ----------
@@ -191,41 +193,6 @@ export const BookmarkView = ({ className, device, mode, folderData, bookmarks, u
       addRecentTag(exactMatch)
     }
   }
-
-  // const calculateFocusIndicators = () => {
-  //    if(mode !== 'focus')
-  //     {
-  //       setFocusIndicators({
-  //         above: 0,
-  //         below: 0
-  //       })
-  //       return
-  //     }
-
-  //   if (!containerRef.current)
-  //     return
-
-  //   const containerRect = containerRef.current.getBoundingClientRect()
-  //   let above = 0
-  //   let below = 0
-    
-
-  //   matchedBookmarks.forEach(bookmark => {
-  //     const element = bookmarkRefs.current[bookmark.id]
-  //     if (!element)
-  //       return
-  //     const rect = element.getBoundingClientRect()
-  //     if (rect.bottom < containerRect.top) {
-  //       above++
-  //     }
-  //     else if (rect.top > containerRect.bottom) {
-  //       below++
-  //     }
-  //   })
-
-  //   // console.log({above,below})
-  //   setFocusIndicators({above,below})
-  // }
 
   const calculateFocusIndicators = () => {
 
