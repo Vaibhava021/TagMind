@@ -1,0 +1,24 @@
+{
+  "manifest_version": 3,
+  "name": "Bookmark Companion",
+  "version": "1.0.0",
+  "description": "A cross-platform bookmark manager.",
+  "permissions": [
+    "tabs",
+    "storage",
+    "identity"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Open Bookmarks"
+  },
+  "host_permissions": [
+    "http://localhost/*",
+    "http://localhost:5173/*"
+  ],
+  "icons": {
+    "16": "vite.svg",
+    "48": "vite.svg",
+    "128": "vite.svg"
+  }
+}

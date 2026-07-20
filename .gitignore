@@ -3,13 +3,12 @@
 /frontend/dist
 /frontend/.env
 
-/frontend/web_build
-/frontend/ext_build
-
+/frontend/configs
 #Django
 /backend/.venv
 /backend/config/db.sqlite3
 /backend/config/node_modules
+
 
 
 #Personal files / extra for development

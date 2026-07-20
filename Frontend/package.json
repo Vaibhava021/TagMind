@@ -4,11 +4,11 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev:ext": "vite --config vite.ext.config.js",
-    "dev:web": "vite --config vite.config.js",
-    "build:ext": "vite build --config vite.ext.config.js",
-    "build:ext:watch": "vite build --config vite.ext.config.js --watch",
-    "build:web": "vite build --config vite.config.js",
+    "dev:ext": "vite --config configs/extension/live.config.js",
+    "dev:web": "vite --config configs/web/live.config.js",
+    "build:ext": "vite build --config configs/extension/live.config.js",
+    "build:ext:watch": "vite build --config configs/extension/live.config.js --watch",
+    "build:web": "vite build --config configs/web/live.config.js",
     "preview": "vite preview",
     "lint": "eslint ."
   },
