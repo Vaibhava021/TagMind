@@ -3,9 +3,9 @@ import FilterBar from './FilterBar'
 import { BookmarkView } from './BookmarkView'
 import SaveBookmark from './SaveBookmark'
 
-const RightPanel = ({search, device, folderData, setFolderData, bookmarks, setBookmarks, useBrandColor, setuseBrandColor, 
-                    mode, setMode, filter, setFilter, is_Loading_Filter, is_Loading_Mode, systemFolder, selectedFolder, setSelectedFolder,
-                    isPosting, setIsPosting, selectedProfile, recentTags, setRecentTags, addRecentTag, isvaultOpen}) => {
+const RightPanel = ({search, device, folderData, setFolderData, bookmarks, setBookmarks, useBrandColor, setuseBrandColor, mode, setMode, filter, setFilter, 
+                     is_Loading_Filter, is_Loading_Mode, systemFolder, selectedFolder, setSelectedFolder, isPosting, setIsPosting, selectedProfile, recentTags, 
+                     setRecentTags, addRecentTag, isvaultOpen, folderAction, setFolderAction}) => {
 
   // Save panel collapse button 
   const [open, setOpen] = useState(true);
@@ -47,6 +47,8 @@ const RightPanel = ({search, device, folderData, setFolderData, bookmarks, setBo
                           setRecentTags={setRecentTags}
                           addRecentTag={addRecentTag}
                           isvaultOpen={isvaultOpen}
+                          folderAction={folderAction}
+                          setFolderAction={setFolderAction}
                           />
 
             <div className='relative shrink-0'>

@@ -4,11 +4,16 @@ import { DomainProvider } from './context/DomainContext'
 import { ExtNavigationProvider } from './context/providers/ExtNavigationProvider'
 import App from './App'
 import './index.css'
+import { NotificationProvider } from './context/providers/NotificationContext'
+import FloatingNotification from './Components/FloatingNotification'
 
 createRoot(document.getElementById('root')).render(
   <DomainProvider>
     <ExtNavigationProvider>
-      <App />
+      <NotificationProvider>
+        <App />
+        <FloatingNotification />
+      </NotificationProvider>
     </ExtNavigationProvider>
   </DomainProvider>
 )

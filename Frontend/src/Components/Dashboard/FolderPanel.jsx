@@ -4,7 +4,7 @@ import { DomainContext } from '../../context/DomainContext';
 import axios from 'axios'
 
 
-const FolderPanel = ({mode, setMode, bookmarks, useBrandColor ,systemFolder, folderData, selectedFolder, setSelectedFolder, isPosting, setIsPosting, selectedProfile, isvaultOpen}) => {
+const FolderPanel = ({mode, setMode, bookmarks, useBrandColor ,systemFolder, folderData, selectedFolder, setSelectedFolder, isPosting, setIsPosting, selectedProfile, isvaultOpen, folderAction, setFolderAction}) => {
   const {domain} = useContext(DomainContext);
   const totalBookmarks = bookmarks.length;
 
@@ -20,14 +20,16 @@ const FolderPanel = ({mode, setMode, bookmarks, useBrandColor ,systemFolder, fol
   // Folder api endpoint 
   const endpoint = `${import.meta.env.VITE_API_BASE_URL}bookmarks/folders/`;
 
+  // For animation folder in copy/move buttons 
+  const selectingDestination = folderAction != null
+
   // Sorting folder in asceding form
   const sortedFolders = useMemo(()=>{
     if(!folderData) return [];
     return [...folderData].sort((a,b) => 
       a.name.localeCompare(b.name, undefined, {sensitivity:'base'})
   );
-}, [folderData, isPosting]);
-
+  }, [folderData, isPosting]);
 
   // Combining fetched folder and system folders into one 
   const allFolders = [...systemFolder, ...sortedFolders]
@@ -43,35 +45,36 @@ const FolderPanel = ({mode, setMode, bookmarks, useBrandColor ,systemFolder, fol
       .split('/')[0];
   };
 
-const glowingFolderids = useMemo(() => {
-  if (mode !== 'focus' || !domain) return new Set();
+  const glowingFolderids = useMemo(() => {
+    if (mode !== 'focus' || !domain) return new Set();
 
-  const currentDomain = normalizeDomain(domain);
+    const currentDomain = normalizeDomain(domain);
 
-  const activeIds = bookmarks
-    .filter(
-      b => normalizeDomain(b.domain) === currentDomain
-    )
-    .map(
-      b => b.folder === null
-        ? 'none'
-        : b.folder
-    );
+    const activeIds = bookmarks
+      .filter(
+        b => normalizeDomain(b.domain) === currentDomain
+      )
+      .map(
+        b => b.folder === null
+          ? 'none'
+          : b.folder
+      );
 
-  return new Set(activeIds);
-}, [bookmarks, domain, mode]);
-  // counting number of bookmarks in each folder  
+    return new Set(activeIds);
+  }, [bookmarks, domain, mode]);
+
+    // counting number of bookmarks in each folder  
   const folderCounts = useMemo(() => {
-    const counts = {};
+      const counts = {};
 
-    bookmarks.forEach(bookmark => {
-        const id = bookmark.folder;
+      bookmarks.forEach(bookmark => {
+          const id = bookmark.folder;
 
-        counts[id] = (counts[id] || 0) + 1;
-    });
+          counts[id] = (counts[id] || 0) + 1;
+      });
 
-    return counts;
-}, [bookmarks, isPosting]);
+      return counts;
+  }, [bookmarks, isPosting]);
 
   // Convert foldername to title case 
   const toTitleCase = (text) => {
@@ -143,7 +146,7 @@ const glowingFolderids = useMemo(() => {
     )
 
     console.log("PATCH RESPONSE:", response.data) 
-}
+  }
 
   // System Folder flags to avoid changes 
   const isSystemFolder =
@@ -173,21 +176,18 @@ const glowingFolderids = useMemo(() => {
   }
 
   useEffect(() => {
-
-  const closeMenu = (e) => {
-    if (
-      e.target.closest('.custom-context-menu')
-    ) {
-      return
+    const closeMenu = (e) => {
+      if (
+        e.target.closest('.custom-context-menu')
+      ) {
+        return
+      }
+      setContextmenu(null)
     }
-    setContextmenu(null)
-  }
-    document.addEventListener('mousedown',closeMenu)
-
+      document.addEventListener('mousedown',closeMenu)
     return () => {
       document.removeEventListener('mousedown', closeMenu)
     }
-
   }, [])
 
   return (
@@ -198,9 +198,9 @@ const glowingFolderids = useMemo(() => {
               const itemCount =
                   folder.id === 'all'
                       ? totalBookmarks
-                  : folder.id === 'none'
+                      : folder.id === 'none'
                       ? folderCounts[null] || 0
-                  : folderCounts[folder.id] || 0;
+                      : folderCounts[folder.id] || 0;
 
             return(
               <FolderItem
@@ -215,10 +215,20 @@ const glowingFolderids = useMemo(() => {
                       setEditingName={setEditingName}
                       onSaveEdit={()=>updateFolder(folder.id)}
                       onClick={() => {
+                                    if(folderAction){
+                                      setFolderAction({
+                                        type: folderAction.type,
+                                        bookmark: folderAction.bookmark,
+                                        folder: folder.id
+                                      })
+                                      return
+                                    }
                                     setSelectedFolder(folder.id);
                                     setEditingName(folder.name)
                                   }}
+
                       isActive={selectedFolder === folder.id}
+                      isDestinationMode = {selectingDestination}
                       onRightClick={(e) => {
                         setContextmenu({
                           x: e.clientX,
@@ -226,7 +236,6 @@ const glowingFolderids = useMemo(() => {
                           folder
                         });
                       }}
-                    
            />);
             })}
         </div>
@@ -253,19 +262,17 @@ const glowingFolderids = useMemo(() => {
                       }}                          
                     />
                   
-                    <button onClick={createFolder} 
-                            onMouseDown={(e) => e.preventDefault()}
-                            className='cursor-pointer shrink-0'>
-                      Save
-                    </button>
+                      <button onClick={createFolder} 
+                              onMouseDown={(e) => e.preventDefault()}
+                              className='cursor-pointer shrink-0'
+                      >Save
+                      </button>
                     </div>
                 ) : (
                   <div
                     onClick={() => setIsCreatingFolder(true)} 
                     className="cursor-pointer select-none"
-
-                  >
-                    New Folder 
+                  >New Folder 
                   </div>
                 )
               }
@@ -276,13 +283,10 @@ const glowingFolderids = useMemo(() => {
 
         <div
             className='custom-context-menu fixed z-100 bg-[#2d2d2d] border border-[#555] rounded-md shadow-lg overflow-hidden text-[11px] text-white flex flex-col w-15'
-
             style={{
                 left: contextmenu.x,
                 top: contextmenu.y
-            }}
-        >
-
+            }}>
             <button
                 className='w-full text-left px-2 py-0.75
                           hover:bg-[#404040] cursor-pointer'
@@ -290,15 +294,12 @@ const glowingFolderids = useMemo(() => {
                     setEditingFolderId(
                         contextmenu.folder.id
                     )
-
                     setEditingName(
                         contextmenu.folder.name
                     )
-
                     setContextmenu(null)
                 }}
-            >
-                Edit
+            >Edit
             </button>
 
             <button
@@ -309,10 +310,8 @@ const glowingFolderids = useMemo(() => {
                     deleteFolder(contextmenu.folder.id)
                     setContextmenu(null)
                 }}
-            >
-                Delete
+              >Delete
             </button>
-
         </div>
       )
     }

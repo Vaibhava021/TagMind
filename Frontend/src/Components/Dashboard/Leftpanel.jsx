@@ -5,7 +5,7 @@ import StatsPanel from './StatsPanel'
 import VaultModal from './VaultModal'
 
 const Leftpanel = ({folderData, useBrandColor, setuseBrandColor, mode, setMode, bookmarks, systemFolder, selectedFolder, setSelectedFolder, isPosting, setIsPosting, selectedProfile,
-                    setAccounts, accounts, setSelectedProfile, recentTags, setRecentTags, addRecentTag, setSearch, LogState, setLogState, isvaultOpen, setIsvaultOpen}) => {
+                    setAccounts, accounts, setSelectedProfile, recentTags, setRecentTags, addRecentTag, setSearch, LogState, setLogState, isvaultOpen, setIsvaultOpen, folderAction, setFolderAction}) => {
 
 const [showVaultModal, setShowVaultModal] = useState(false)
 
@@ -26,7 +26,8 @@ const [showVaultModal, setShowVaultModal] = useState(false)
                     setIsPosting={setIsPosting}
                     selectedProfile={selectedProfile}
                     isvaultOpen={isvaultOpen}
-
+                    folderAction={folderAction}
+                    setFolderAction={setFolderAction}
                     />
       </div>
       <div className='shrink-0'>

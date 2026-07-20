@@ -3,9 +3,11 @@ import { DomainContext } from '../../context/DomainContext'
 import BookmarkItem from './BookmarkItem';
 import { useChromeStorage } from '../../Hooks/useChromeStorage';
 import axios from 'axios';
+import { useNotification } from '../../context/providers/NotificationContext';
+
 
 export const BookmarkView = ({ className, device, mode, folderData, bookmarks, useBrandColor, selectedFolder, setSelectedFolder, search, isPosting, setIsPosting, selectedProfile, 
-                              filter, recentTags, setRecentTags, addRecentTag, isvaultOpen, open }) => {
+                              filter, recentTags, setRecentTags, addRecentTag, isvaultOpen, open, folderAction, setFolderAction }) => {
 
   const {domain: currentSiteDomain} = useContext(DomainContext);
   const [openId, setOpenId] = useState(null);
@@ -23,7 +25,9 @@ export const BookmarkView = ({ className, device, mode, folderData, bookmarks, u
   const containerRef = useRef(null)
   const bookmarkRefs = useRef({})
   const [focusIndicators, setFocusIndicators] = useState({above: 0, below: 0, visible: 0})
-
+  
+  // notications 
+  const { showNotification } = useNotification()
 
   const parseSearch = (search) => {
     if (!search) return { type: 'title', value: '' };
@@ -246,7 +250,14 @@ export const BookmarkView = ({ className, device, mode, folderData, bookmarks, u
 
   setFocusIndicators({above, below, visible})
 }
-
+  const notify = (message, type) => {
+    showNotification({ message, type, 
+                    style:{
+                      bottom: open
+                        ? '230px'
+                        : '20px'
+                    }});
+  };
   useEffect(()=>{
     // console.log("Matched Bookmarks:", matchedBookmarks)
     // console.log("Matched Bookmarks:", matchedBookmarks.map(b => b.title))
@@ -255,8 +266,9 @@ export const BookmarkView = ({ className, device, mode, folderData, bookmarks, u
 
     calculateFocusIndicators()
     checkTags()
+    console.log({...folderAction})
     return rightClickMenu()
-  }, [currentSiteDomain, filteredBookmarks, setContextMenu, search, allTags, openId, mode, open])
+  }, [currentSiteDomain, filteredBookmarks, setContextMenu, search, allTags, openId, mode, open, folderAction])
 
 
   return (
@@ -379,7 +391,7 @@ export const BookmarkView = ({ className, device, mode, folderData, bookmarks, u
               </div>
           { contextMenu && (
           <div
-              className='custom-context-menu fixed cursor-pointer z-100 bg-[#2d2d2d] b order border-[#555] rounded-md shadow-l overflow-hidden text-[11px] 
+              className='custom-context-menu fixed cursor-pointer z-100 bg-[#2d2d2d] border border-[#555] rounded-md shadow-l overflow-hidden text-[11px] 
                       text-white flex flex-col w-24'
               style={{
                   left: contextMenu.x,
@@ -397,6 +409,33 @@ export const BookmarkView = ({ className, device, mode, folderData, bookmarks, u
                       setContextMenu(null)
                     }}
                   >Edit
+              </button>
+
+              <button className='w-full text-left px-2 py-0.75 hover:bg-blue-500 cursor-pointer'
+                  onClick={()=>{
+                    setFolderAction({
+                      type: 'move',
+                      bookmark: contextMenu.bookmark.id,
+                      folder : null
+                    })
+                    console.log(folderAction.bookmark)
+                    notify('Click on destination Folder', 'edit')
+                    setContextMenu(null)
+                  }}
+                  >Move To
+              </button>
+
+              <button className='w-full text-left px-2 py-0.75 hover:bg-blue-500 cursor-pointer'
+                  onClick={()=>{
+                    setFolderAction({
+                      type: 'copy',
+                      bookmark: contextMenu.bookmark.id,
+                      folder : null
+                    })
+                    notify('Click on destination Folder', 'edit')
+                    setContextMenu(null)
+                  }}
+                  >Copy To
               </button>
 
               <button className='w-full text-left px-2 py-0.75 hover:bg-red-600 cursor-pointer'
@@ -418,6 +457,7 @@ export const BookmarkView = ({ className, device, mode, folderData, bookmarks, u
                       setTimeout(()=>{
                           setCopied(false)
                       },1500)
+                    notify('Link Copied Successfully', 'success')
                   }}
                 >Copy Link
               </button>

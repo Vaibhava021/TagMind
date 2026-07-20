@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react'
 
-export const FolderItem = ({name, item, shouldGlow, folder_accent, useBrandColor, onClick, isActive, onRightClick, isEditing, editingName, setEditingName, onSaveEdit}) => {  
+export const FolderItem = ({name, item, shouldGlow, folder_accent, useBrandColor, onClick, isActive, onRightClick, isEditing, editingName, setEditingName, onSaveEdit, isDestinationMode}) => {  
       useEffect(() => {
             // console.log(name,shouldGlow)
       }, [])
@@ -11,7 +11,7 @@ export const FolderItem = ({name, item, shouldGlow, folder_accent, useBrandColor
               e.preventDefault();
               onRightClick(e);
             }}
-            className={`border-l-2 select-none`}
+            className={`border-l-2 select-none ${isDestinationMode ? 'animate-pulse' : ''}`}
             style={{
             borderLeftColor: isActive ? `${folder_accent}` : "transparent"
             }}

@@ -90,6 +90,9 @@ import { useChromeStorage } from '../Hooks/useChromeStorage.js';
 
     const systemFolder = [  { "id": "all", "name": "All Bookmarks", "accent_color": "#0496ff" },
                         { "id": "none", "name": "Uncategorized", "accent_color": "#db00b6" },]
+
+    // folder action 
+    const [folderAction, setFolderAction] = useState(null)
           
 
     return (
@@ -126,6 +129,8 @@ import { useChromeStorage } from '../Hooks/useChromeStorage.js';
                         LogState={LogState}
                         isvaultOpen={isvaultOpen}
                         setIsvaultOpen={setIsvaultOpen}
+                        folderAction={folderAction}
+                        setFolderAction={setFolderAction}
                         />
               <RightPanel
                         mode={mode}
@@ -152,6 +157,8 @@ import { useChromeStorage } from '../Hooks/useChromeStorage.js';
                         setRecentTags={setRecentTags}
                         addRecentTag={addRecentTag}
                         isvaultOpen={isvaultOpen}
+                        folderAction={folderAction}
+                        setFolderAction={setFolderAction}
                         />
           </div>
       </div>
