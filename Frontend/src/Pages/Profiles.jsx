@@ -5,7 +5,7 @@ import { googleLogin } from '../api/googleAuth';
 import { useNavigation } from '../context/NavigationContext';
 
 
-const ProfileSelector = ({selectedProfile, setSelectedProfile, accounts, setAccounts,}) => {
+const ProfileSelector = ({selectedProfile, setSelectedProfile, accounts, setAccounts, refreshAccounts}) => {
   // State to track which account is currently selected
   const {navigate} = useNavigation();
   const [selectedId, setSelectedId] = useState('');
@@ -30,7 +30,8 @@ const ProfileSelector = ({selectedProfile, setSelectedProfile, accounts, setAcco
 
   async function fetchData() {
       try {
-        const accountRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}accounts/profiles/`);
+        // const accountRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}accounts/profiles/`);
+        const accountRes = refreshAccounts;
 
         const accountsData = await accountRes.json()
 
@@ -190,7 +191,6 @@ const darkenColor = (hex,amount = 0.25) => {
         )
     }
     </>
-
   );
 };
 

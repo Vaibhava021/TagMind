@@ -5,7 +5,9 @@ import RightPanel from '../Components/Dashboard/RightPanel.jsx';
 // import {folders, savedBookmarks} from "../Data/data.js"
 import { useChromeStorage } from '../Hooks/useChromeStorage.js';
 
-  const Dashboard = ({selectedProfile, setSelectedProfile, accounts, setAccounts, setLogState, LogState, isvaultOpen, setIsvaultOpen}) => {
+  const Dashboard = ({selectedProfile, setSelectedProfile, accounts, setAccounts, setLogState, LogState, isvaultOpen, setIsvaultOpen,
+                      refreshAccounts,
+  }) => {
     // Search bar 
     const [search, setSearch] = useState("");
 
@@ -131,6 +133,7 @@ import { useChromeStorage } from '../Hooks/useChromeStorage.js';
                         setIsvaultOpen={setIsvaultOpen}
                         folderAction={folderAction}
                         setFolderAction={setFolderAction}
+                        refreshAccounts={refreshAccounts}
                         />
               <RightPanel
                         mode={mode}

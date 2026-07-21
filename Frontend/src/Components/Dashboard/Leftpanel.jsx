@@ -4,8 +4,9 @@ import TagPanel from './TagPanel'
 import StatsPanel from './StatsPanel'
 import VaultModal from './VaultModal'
 
-const Leftpanel = ({folderData, useBrandColor, setuseBrandColor, mode, setMode, bookmarks, systemFolder, selectedFolder, setSelectedFolder, isPosting, setIsPosting, selectedProfile,
-                    setAccounts, accounts, setSelectedProfile, recentTags, setRecentTags, addRecentTag, setSearch, LogState, setLogState, isvaultOpen, setIsvaultOpen, folderAction, setFolderAction}) => {
+const Leftpanel = ({folderData, useBrandColor, setuseBrandColor, mode, setMode, bookmarks, systemFolder, selectedFolder, setSelectedFolder, 
+                    isPosting, setIsPosting, selectedProfile, setAccounts, accounts, setSelectedProfile, recentTags, setRecentTags, 
+                    addRecentTag, setSearch, LogState, setLogState, isvaultOpen, setIsvaultOpen, folderAction, setFolderAction, refreshAccounts}) => {
 
 const [showVaultModal, setShowVaultModal] = useState(false)
 
