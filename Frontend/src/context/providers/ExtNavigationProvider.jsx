@@ -3,16 +3,16 @@ import { NavigationContext } from '../NavigationContext'
 
 export function ExtNavigationProvider({ children }) {
   const [currentScreen, setCurrentScreen] = useState('profiles')
+  const [navigationState, setNavigationState] = useState({})
   const [history, setHistory] = useState([])
 
   // useCallback with empty deps — navigate never becomes stale
-  const navigate = useCallback((screen) => {
-    console.log('navigate called with:', screen)
+  const navigate = useCallback((screen, state = {}) => {  
     setCurrentScreen(prev => {
-      console.log('prev screen:', prev, '→ new screen:', screen)
-      setHistory(h => [...h, prev])
-      return screen
+        setHistory(h => [...h, prev])
+        return screen
     })
+    setNavigationState(state)
   }, [])
 
   const goBack = useCallback(() => {
@@ -30,6 +30,7 @@ export function ExtNavigationProvider({ children }) {
   return (
     <NavigationContext.Provider value={{
       currentScreen,
+      navigationState,
       navigate,
       goBack,
       canGoBack: history.length > 0,

@@ -14,6 +14,9 @@ from .serializers import UserProfileSerializer,RegisterSerializer, LoginSerializ
 from django.contrib.auth.hashers import make_password, check_password 
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
+from django.http import JsonResponse
+from django.conf import settings
+
 
 class UserProfileViewSet(viewsets.ModelViewSet):
     queryset = UserProfile.objects.all()
@@ -220,6 +223,7 @@ class UnlockVaultView(
 
 class ChangeVaultPasswordView(APIView):
 
+
     permission_classes = [AllowAny]
 
     def post(self, request):
@@ -269,3 +273,10 @@ class ChangeVaultPasswordView(APIView):
 
         profile.save()
         return Response({'success': True})
+    
+
+def health(request):
+    return JsonResponse({
+        "status": "ok",
+        "version": settings.APP_VERSION
+    })

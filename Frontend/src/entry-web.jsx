@@ -5,13 +5,22 @@ import { DomainProvider } from './context/DomainContext'
 import { WebNavigationProvider } from './context/providers/WebNavigationProvider'
 import App from './App'
 import './index.css'
+import { ensureBackend } from "./api/startup";
 
-createRoot(document.getElementById('root')).render(
-  <DomainProvider>
-    <BrowserRouter>
-      <WebNavigationProvider>
-        <App />
-      </WebNavigationProvider>
-    </BrowserRouter>
-  </DomainProvider>
-)
+async function bootstrap() {
+
+    // await healthCheck();
+    await ensureBackend();
+    
+    createRoot(document.getElementById("root")).render(
+    <DomainProvider>
+      <BrowserRouter>
+        <WebNavigationProvider>
+          <App />
+        </WebNavigationProvider>
+      </BrowserRouter>
+    </DomainProvider>
+  );
+}
+
+bootstrap();

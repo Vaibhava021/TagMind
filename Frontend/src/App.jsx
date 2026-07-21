@@ -7,11 +7,11 @@ import GoogleLogin     from './Pages/GoogleLogin'
 import LoggingOut      from './Pages/LoggingOut'
 import { useSessionAuth } from './Hooks/useChromeStorage'
 import { NavigationContext } from './context/NavigationContext'
-
+import Startup from './Pages/Startup'
 
 const App = () => {
   const { currentScreen, navigate } = useNavigation()
-
+  const [backendReady, setBackendReady] = useState(false)
   const [selectedProfile, setSelectedProfile] = useState(null)
   const profileRef = useRef(null)                              
 
@@ -56,9 +56,9 @@ const App = () => {
       <ProfileSelector
         {...profileProps}
       />
-    ),
+      ),
     login: <Login />,
-    'google-login': <GoogleLogin />,
+      'google-login': <GoogleLogin />,
     
     dashboard: selectedProfile ? (
       <Dashboard
@@ -68,15 +68,17 @@ const App = () => {
         isvaultOpen={isvaultOpen}
         setIsvaultOpen={setIsvaultOpen}
       />
-    ) : (
-      <ProfileSelector
-        {...profileProps}
-      />
-    ),
+      ) : (
+        <ProfileSelector
+          {...profileProps}
+        />
+      ),
 }
 
   const resolvedScreen = screens[currentScreen] ? currentScreen : 'profiles'
-
+  if (!backendReady) {
+    return <Startup onReady={() => setBackendReady(true)} />
+  }
   return (
   <div>
     {screens[resolvedScreen]}
