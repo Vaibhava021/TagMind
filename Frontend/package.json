@@ -4,13 +4,20 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev:ext": "vite --config configs/extension/live.config.js",
-    "dev:web": "vite --config configs/web/live.config.js",
-    "build:ext": "vite build --config configs/extension/live.config.js",
+    "dev:ext": "vite --config configs/extension/dev.config.js",
+    "dev:web": "vite --config configs/web/dev.config.js",
+    "build:ext": "vite build --mode production --config configs/extension/live.config.js",
     "build:ext:watch": "vite build --config configs/extension/live.config.js --watch",
-    "build:web": "vite build --config configs/web/live.config.js",
+    "build:web": "vite build --mode production --config configs/web/live.config.js",
+    "build:dev:web": "vite build --mode development --config configs/web/dev.config.js",
+    "build:dev:ext": "vite build --mode development --config configs/extension/dev.config.js",
     "preview": "vite preview",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "clean": "rimraf build",
+    "release:web": "npm run clean && npm run build:web",
+    "release:ext": "npm run clean && npm run build:ext",
+    "build:all": "npm run build:web && npm run build:ext",
+    "release": "npm run clean && npm run build:all"
   },
   "dependencies": {
     "@react-oauth/google": "^0.13.5",
