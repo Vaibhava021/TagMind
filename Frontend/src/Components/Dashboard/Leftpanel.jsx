@@ -60,6 +60,8 @@ const [showVaultModal, setShowVaultModal] = useState(false)
                   onClose={() => setShowVaultModal(false)} 
                   isvaultOpen={isvaultOpen}
                   setIsvaultOpen={setIsvaultOpen}
+                  refreshAccounts={refreshAccounts}
+                  setAccounts={setAccounts}
                   />
       )}
     </div>

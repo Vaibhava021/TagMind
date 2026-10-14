@@ -70,6 +70,14 @@ const StatsPanel = ({accounts, setAccounts, selectedProfile, setSelectedProfile,
   }, [bookmarks])
 
   useEffect(() => {
+  return () => {
+    if (holdTimerRef.current) {
+      clearTimeout(holdTimerRef.current)
+      holdTimerRef.current = null
+    }
+  }
+  }, [])
+  useEffect(() => {
     // console.log(accounts)
     // console.log(selectedProfile)
 

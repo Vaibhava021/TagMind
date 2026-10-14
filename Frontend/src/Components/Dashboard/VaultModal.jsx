@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react'
 import { setVaultPassword, unlockVault } from '../../api/vaultAPI'
 
 
-const VaultModal = ({ onClose, selectedProfile, accounts, isvaultOpen, setIsvaultOpen }) => {
+const VaultModal = ({ onClose, selectedProfile, accounts, isvaultOpen, setIsvaultOpen, refreshAccounts, setAccounts }) => {
 
     const [password, setPassword] = useState('')
     const [confirmPassword, setConfirmPassword] = useState('')
@@ -10,34 +10,48 @@ const VaultModal = ({ onClose, selectedProfile, accounts, isvaultOpen, setIsvaul
     const [loading, setLoading] = useState(false)
 
     const currentProfile = useMemo(() => {
-        return accounts.find(acc => acc.id === selectedProfile)
-    }, [accounts, selectedProfile])
+        return accounts.find(
+            acc => String(acc.id) === String(selectedProfile)
+        )
+        }, [accounts, selectedProfile])
 
     const hasVault = currentProfile?.has_vault
 
+    
     const handleCreateVault = async () => {
-        try{
-            setError('')
-            setLoading(true)
+    try {
+        setError('')
+        setLoading(true)
 
-            if(password !== confirmPassword){
-                throw new Error('Passwords do not match')
-            }
-            await setVaultPassword(selectedProfile, password)
-            currentProfile.has_vault = true
-            chrome.storage.session.set({vaultOpen: true}
+        if (password !== confirmPassword) {
+        throw new Error('Passwords do not match')
+        }
 
-            )
-            setIsvaultOpen(true)
-            onClose()
-        }
-        catch(err){
-            setError(err.message)
-        }
-        finally{
-            setLoading(false)
-        }
+        // Create the vault on the backend first.
+        await setVaultPassword(selectedProfile, password)
+
+        // Update central account state after backend success.
+        setAccounts(prev =>
+        prev.map(acc =>
+            String(acc.id) === String(selectedProfile)
+            ? { ...acc, has_vault: true }
+            : acc
+        )
+        )
+
+        await chrome.storage.session.set({ vaultOpen: true })
+        setIsvaultOpen(true)
+        onClose()
+
+        // Refresh from the backend to synchronize account data.
+        await refreshAccounts()
+    } catch (err) {
+        setError(err.message || 'Failed to create vault.')
+    } finally {
+        setLoading(false)
     }
+    }
+
 
     const handleUnlockVault = async ()=>{
         try{
@@ -46,15 +60,16 @@ const VaultModal = ({ onClose, selectedProfile, accounts, isvaultOpen, setIsvaul
 
             const result = await unlockVault(selectedProfile, password)
 
-            if(!result.success){throw new Error('Wrong password')}
+            if(!result.success){
+                throw new Error('Wrong password')}
 
-            chrome.storage.session.set({vaultOpen: true})
+            await chrome.storage.session.set({vaultOpen: true})
             setIsvaultOpen(true)
             onClose()
         }
 
         catch(err){
-            setError(err.message)
+            setError(err.message || 'Failed to unlock vault.')
         }
 
         finally{

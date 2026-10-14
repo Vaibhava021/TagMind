@@ -1,4 +1,4 @@
-  import { useEffect, useState, useRef } from 'react'
+  import { useEffect, useState, useRef, useCallback } from 'react'
   import { useNavigation } from './context/NavigationContext'
   import Dashboard       from './Pages/Dashboard'
   import ProfileSelector from './Pages/Profiles'
@@ -20,10 +20,57 @@
     const [LogState, setLogState]                 = useState(null)
     const [isvaultOpen, setIsvaultOpen]           = useState(false)
 
-    const fetchAccounts = async () => {
-      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}accounts/profiles/`);
-      setAccounts(await res.json());
-    };
+    const [accountsStatus, setAccountsStatus] = useState('loading')
+    const [accountsError, setAccountsError] = useState(null)
+
+    // const refreshAccounts = async () => {
+    //   const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}accounts/profiles/`);
+    //   setAccounts(await res.json());
+    // };
+    const handleBackendReady = useCallback(() => {
+      setBackendReady(true);
+    }, []);
+    const refreshAccounts = async () => {
+      setAccountsError(null)
+
+      setAccountsStatus(current =>
+        current === 'success' ? 'success' : 'loading'
+      )
+      const url = `${import.meta.env.VITE_API_BASE_URL}accounts/profiles/`
+      let lasterror
+
+      // retry fetching account 3 times if failure occurs 
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try{
+          const res = await fetch(url)
+
+          if(!res.ok){
+            throw new Error(`Failed to fetch accounts (HTTP ${res.status})`)
+          }
+          const data = await res.json()
+          const profileList = Array.isArray(data) ? data : data?.result ?? data?.results
+          if (!Array.isArray(profileList)) {
+            throw new Error('The profiles API returned an unexpected response')
+          }
+
+          setAccounts(profileList)
+          setAccountsStatus('success')
+          setAccountsError(null)
+
+          return true
+        } catch(error) {
+          lasterror = error
+          
+          if(attempt < 2){
+            await new Promise(resolve => setTimeout(resolve, 500*(attempt+1)))
+          }
+        }
+      }
+      setAccountsError(lasterror?.message || 'Unable to load Profiles.')
+      setAccountsStatus(current => current === 'success' ? 'success' : 'error')
+      return false
+    }
+
     // updates both the ref (sync) and state (async)
     const handleSetSelectedProfile = (id) => {
                                                 profileRef.current = id
@@ -44,7 +91,7 @@
         }
       })
       if (!backendReady) return;
-      fetchAccounts();
+      refreshAccounts();
       // console.log('App context object:', NavigationContext)
     }, [backendReady])
 
@@ -60,7 +107,7 @@
       profiles: (
         <ProfileSelector
           {...profileProps}
-          refreshAccounts={fetchAccounts}
+          refreshAccounts={refreshAccounts}
         />
         ),
       login: <Login />,
@@ -69,7 +116,7 @@
       dashboard: selectedProfile ? (
         <Dashboard
           {...profileProps}
-          refreshAccounts={fetchAccounts}
+          refreshAccounts={refreshAccounts}
           setLogState={setLogState}
           LogState={LogState}
           isvaultOpen={isvaultOpen}
@@ -78,14 +125,14 @@
         ) : (
           <ProfileSelector
           {...profileProps}
-          refreshAccounts={fetchAccounts}
+          refreshAccounts={refreshAccounts}
           />
         ),
-  }
+    }
 
     const resolvedScreen = screens[currentScreen] ? currentScreen : 'profiles'
     if (!backendReady) {
-      return <Startup onReady={() => setBackendReady(true)} />
+      return <Startup onReady={handleBackendReady} />
     }
     return (
     <div>

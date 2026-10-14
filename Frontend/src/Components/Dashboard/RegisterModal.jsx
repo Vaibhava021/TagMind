@@ -30,7 +30,19 @@ export default function RegisterModal({fetchData,onClose}){
         finally{
             setLoading(false)
         }
+        const registered = await registerUser(
+            username,
+            email,
+            password,
+        )
+        const refreshed = await fetchData()
+        if(!refreshed){
+            setError('Profile created, but the profile list could not be refreshed. Please Try again')
+        }
     }
+
+
+
 
 
 return(

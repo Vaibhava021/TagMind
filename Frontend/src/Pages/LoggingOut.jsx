@@ -20,13 +20,24 @@ const LoggingOut = ({setSelectedProfile, setLogState, setIsvaultOpen}) => {
             </button>
             <button 
               onClick={async () => {
-                if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.session) {
-                  await chrome.storage.session.remove(['selectedProfile','vaultOpen']);
+                try {
+                  if (
+                    typeof chrome !== 'undefined' &&
+                    chrome.storage?.session
+                  ) {
+                    await chrome.storage.session.remove([
+                      'selectedProfile',
+                      'vaultOpen',
+                    ]);
+                  }
+                } catch (error) {
+                  console.error('Failed to clear session storage:', error);
+                } finally {
                   setIsvaultOpen(false);
+                  setSelectedProfile(null);
+                  setLogState('logged_out');
+                  navigate('profiles');
                 }
-                setSelectedProfile(null);
-                setLogState("logged_out");
-                navigate('profiles')
               }}
               className="bg-[#ff292e] text-white text-[10.5px] font-bold px-3 py-1.5 rounded-md hover:bg-[#c10505] cursor-pointer"
                 >Logout
