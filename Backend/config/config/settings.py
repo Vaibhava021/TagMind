@@ -12,21 +12,71 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 from pathlib import Path
 from datetime import timedelta
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
+import os
+from corsheaders.defaults import default_headers
+
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+
+# --------------------------------------------------
+# Logging configuration
+# --------------------------------------------------
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+
+    "formatters": {
+        "standard": {
+            "format": (
+                "{asctime} | {levelname} | "
+                "{name} | {message}"
+            ),
+            "style": "{",
+        },
+    },
+
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "standard",
+        },
+
+    },
+
+    "loggers": {
+        "bookmarks.sync": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+    },
+}
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-k5i1#*rwoj9ymwoz6j9=lx$oic%a%n4ajb8ibe4o!un%a=z2xg"
+DEBUG = os.environ.get("DJANGO_DEBUG", "true").strip().lower() in {
+    "1", "true", "yes", "on"
+}
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
+if not SECRET_KEY:
+    if not DEBUG:
+        raise RuntimeError("DJANGO_SECRET_KEY must be set when DEBUG is disabled.")
+    SECRET_KEY = "local-development-only-tagmind-secret-key"
 
-ALLOWED_HOSTS = []
+_allowed_hosts_value = os.environ.get("DJANGO_ALLOWED_HOSTS")
+if not DEBUG and not _allowed_hosts_value:
+    raise RuntimeError("DJANGO_ALLOWED_HOSTS must be set when DEBUG is disabled.")
 
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in (_allowed_hosts_value or "localhost,127.0.0.1,[::1]").split(",")
+    if host.strip()
+]
 
 # Application definition
 
@@ -47,17 +97,26 @@ INSTALLED_APPS = [
 ]
 
 CORS_ALLOWED_ORIGINS = [
-    "chrome-extension://iapnckatfjgkonflpcaljlhfjmkpmpble",
-    "http://localhost:5173",
+    origin.strip()
+    for origin in os.environ.get(
+        "CORS_ALLOWED_ORIGINS",
+        "http://localhost:5173,chrome-extension://iapnckatfjgkonflpcaljlhfjmkpmpble,chrome-extension://iidlnimooplfabkjhgmeliempcnkfoin",
+    ).split(",")
+    if origin.strip()
 ]
 
-CORS_ALLOWED_ORIGIN_REGEXES = [
-    r"^chrome-extension://.*$",
-]
+# Unpacked development extensions may receive a different ID after a
+# rebuild. Keep this broad extension-origin rule local to DEBUG mode;
+# production relies on the explicit CORS_ALLOWED_ORIGINS list above.
+CORS_ALLOWED_ORIGIN_REGEXES = (
+    [r"^chrome-extension://[a-p]{32}$"] if DEBUG else []
+)
 
-#mostly for development purposes not for deployment purposes 
-CORS_ALLOW_ALL_ORIGINS = True
-CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_ALL_ORIGINS = DEBUG and os.environ.get(
+    "CORS_ALLOW_ALL_ORIGINS", "false"
+).strip().lower() in {"1", "true", "yes", "on"}
+CORS_ALLOW_CREDENTIALS = False
+CORS_ALLOW_HEADERS = (*default_headers, "x-vault-token")
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -68,8 +127,6 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "corsheaders.middleware.CorsMiddleware"
-
 ]
 
 
@@ -99,10 +156,27 @@ DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": BASE_DIR / "db.sqlite3",
-        # for testing purposes 
-        # "NAME": BASE_DIR / "db copy.sqlite3",
+        "TEST": {
+            "NAME": BASE_DIR / "test_db.sqlite3",
+        },
     }
 }
+
+# SQLite remains the default for local development. A production database
+# backend is selected through standard Django connection settings, without
+# tying this project to a provider before Phase 4 makes that decision.
+if os.environ.get("DJANGO_DB_ENGINE"):
+    DATABASES["default"] = {
+        "ENGINE": os.environ["DJANGO_DB_ENGINE"],
+        "NAME": os.environ.get("DJANGO_DB_NAME", ""),
+        "USER": os.environ.get("DJANGO_DB_USER", ""),
+        "PASSWORD": os.environ.get("DJANGO_DB_PASSWORD", ""),
+        "HOST": os.environ.get("DJANGO_DB_HOST", ""),
+        "PORT": os.environ.get("DJANGO_DB_PORT", ""),
+        "CONN_MAX_AGE": int(os.environ.get("DJANGO_DB_CONN_MAX_AGE", "60")),
+    }
+elif not DEBUG:
+    raise RuntimeError("Set DJANGO_DB_ENGINE and database connection variables in production.")
 
 
 # Password validation
@@ -131,8 +205,16 @@ REST_FRAMEWORK = {
     ],
 
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.AllowAny',
-    ]
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.ScopedRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'register': '5/hour',
+        'login': '10/hour',
+        'vault': '10/hour',
+    },
 }
 # Internationalization
 # https://docs.djangoproject.com/en/6.0/topics/i18n/
@@ -165,3 +247,12 @@ SIMPLE_JWT = {
 
     'UPDATE_LAST_LOGIN': True,
 }
+
+if not DEBUG:
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SECURE_REFERRER_POLICY = "same-origin"
+
+GOOGLE_OAUTH_CLIENT_ID = os.environ.get("GOOGLE_OAUTH_CLIENT_ID", "")

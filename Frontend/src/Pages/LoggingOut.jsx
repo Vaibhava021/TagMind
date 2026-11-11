@@ -1,5 +1,6 @@
 import React from 'react'
 import { useNavigation } from '../context/NavigationContext';
+import { clearAccessToken } from '../api/session';
 
 const LoggingOut = ({setSelectedProfile, setLogState, setIsvaultOpen}) => {
   const { navigate } = useNavigation();
@@ -33,6 +34,7 @@ const LoggingOut = ({setSelectedProfile, setLogState, setIsvaultOpen}) => {
                 } catch (error) {
                   console.error('Failed to clear session storage:', error);
                 } finally {
+                  await clearAccessToken();
                   setIsvaultOpen(false);
                   setSelectedProfile(null);
                   setLogState('logged_out');

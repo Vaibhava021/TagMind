@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import { SearchSyncBar } from '../Components/Dashboard/SearchSyncBar.jsx'
 import Leftpanel from '../Components/Dashboard/Leftpanel.jsx';
 import RightPanel from '../Components/Dashboard/RightPanel.jsx';
 // import {folders, savedBookmarks} from "../Data/data.js"
 import { useChromeStorage } from '../Hooks/useChromeStorage.js';
+import { authenticatedFetch, clearVaultToken, getVaultTokenExpiry } from '../api/session.js';
 
   const Dashboard = ({selectedProfile, setSelectedProfile, accounts, setAccounts, setLogState, LogState, isvaultOpen, setIsvaultOpen,
                       refreshAccounts,
@@ -32,15 +33,27 @@ import { useChromeStorage } from '../Hooks/useChromeStorage.js';
 
     const [bookmarks, setBookmarks] = useState([])
     const [folderData, setFolderData] = useState([])
-    const [loading, setLoading] = useState(true)
 
     // Posting data to api 
     const [isPosting, setIsPosting] = useState(false)
 
-    async function fetchData() {
+    const fetchData = useCallback(async () => {
       try {
-        const bookmarkRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}bookmarks/bookmarks/?profile=${selectedProfile}&vault=${isvaultOpen}`);
-        const folderRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}bookmarks/folders/?profile=${selectedProfile}&vault=${isvaultOpen}`);
+        const bookmarkRes = await authenticatedFetch(`${import.meta.env.VITE_API_BASE_URL}bookmarks/bookmarks/?profile=${selectedProfile}&vault=${isvaultOpen}`);
+        const folderRes = await authenticatedFetch(`${import.meta.env.VITE_API_BASE_URL}bookmarks/folders/?profile=${selectedProfile}&vault=${isvaultOpen}`);
+
+        if (!bookmarkRes.ok || !folderRes.ok) {
+          if (isvaultOpen && (bookmarkRes.status === 403 || folderRes.status === 403)) {
+            await clearVaultToken()
+            setBookmarks([])
+            setFolderData([])
+            setIsvaultOpen(false)
+            if (globalThis.chrome?.storage?.session) {
+              await globalThis.chrome.storage.session.remove('vaultOpen')
+            }
+          }
+          throw new Error('Unable to load bookmarks. Please sign in again.')
+        }
 
         const bookmarkData = await bookmarkRes.json()
         const folderData = await folderRes.json()
@@ -60,10 +73,7 @@ import { useChromeStorage } from '../Hooks/useChromeStorage.js';
       catch(err){
         console.error(err)
       }
-      finally{
-        setLoading(false)
-      }
-    }
+    }, [selectedProfile, isvaultOpen, setIsvaultOpen])
 
     useEffect(() => {
     //       console.log(
@@ -73,14 +83,39 @@ import { useChromeStorage } from '../Hooks/useChromeStorage.js';
       // console.log(isvaultOpen)
       // console.log(`${import.meta.env.VITE_API_BASE_URL}bookmarks/bookmarks/?profile=${selectedProfile}&vault=${isvaultOpen}`)
       fetchData()
-    }, [isPosting, selectedProfile, isvaultOpen])
+    }, [isPosting, fetchData])
+
+    useEffect(() => {
+      if (!isvaultOpen) return undefined
+
+      let timerId
+      let cancelled = false
+      const lockVault = async () => {
+        await clearVaultToken()
+        setBookmarks([])
+        setFolderData([])
+        setIsvaultOpen(false)
+        if (globalThis.chrome?.storage?.session) {
+          await globalThis.chrome.storage.session.remove('vaultOpen')
+        }
+      }
+
+      getVaultTokenExpiry().then(expiry => {
+        if (!cancelled) {
+          timerId = setTimeout(lockVault, Math.max(0, expiry - Date.now()))
+        }
+      })
+
+      return () => {
+        cancelled = true
+        clearTimeout(timerId)
+      }
+    }, [isvaultOpen, setIsvaultOpen])
 
     // Brand color 
     const [useBrandColor, setuseBrandColor] = useState(false);  
 
     // _____________________
-    const isExtension = window.location.protocol === 'chrome-extension:';
-
     // Mode Focus Domain None 
     const [mode, setMode, is_Loading_Mode] = useChromeStorage('focusmode', 'none');
 

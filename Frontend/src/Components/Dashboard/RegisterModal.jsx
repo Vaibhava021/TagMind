@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
-import { registerUser } from '../../api/authApi'
+import { loginUser, registerUser } from '../../api/authApi'
+import { setAuthTokens } from '../../api/session'
 
 export default function RegisterModal({fetchData,onClose}){
 
@@ -8,17 +9,22 @@ export default function RegisterModal({fetchData,onClose}){
     const [password,setPassword] = useState('')
     const [loading,setLoading] = useState(false)
     const [error,setError] = useState('')
+    const [isSignIn,setIsSignIn] = useState(false)
 
-    const handleRegister = async ()=>{
+    const handleSubmit = async ()=>{
         try{
             setLoading(true)
             setError('')
-            await registerUser(
-                username,
-                email,
-                password
-            )
-            await fetchData()
+            if (!isSignIn) {
+                await registerUser(username, email, password)
+            }
+
+            const session = await loginUser(email, password)
+            await setAuthTokens(session.access, session.refresh)
+            const refreshed = await fetchData()
+            if (!refreshed) {
+                throw new Error('Signed in, but the profile list could not be loaded.')
+            }
             onClose()
         }
         catch(err){
@@ -29,15 +35,6 @@ export default function RegisterModal({fetchData,onClose}){
 
         finally{
             setLoading(false)
-        }
-        const registered = await registerUser(
-            username,
-            email,
-            password,
-        )
-        const refreshed = await fetchData()
-        if(!refreshed){
-            setError('Profile created, but the profile list could not be refreshed. Please Try again')
         }
     }
 
@@ -51,17 +48,19 @@ return(
 
             <div className="mb-5">
                 <h2 className="text-white text-xl font-semibold tracking-tight">
-                    Create Profile
+                    {isSignIn ? 'Sign In' : 'Create Profile'}
                 </h2>
 
                 <p className="text-[#8A8D91] text-sm mt-1">
-                    Create a new TagMind profile
+                    {isSignIn
+                        ? 'Sign in to your TagMind account'
+                        : 'Create a new TagMind profile'}
                 </p>
             </div>
 
             <div className="flex flex-col gap-3">
 
-                <input
+                {!isSignIn && <input
                     className="w-full h-11 px-3 rounded-lg bg-[#232321] border border-[#534B52] text-white text-sm outline-none focus:border-[#8A8D91] transition-colors"
                     placeholder="Username"
                     value={username}
@@ -70,7 +69,7 @@ return(
                             e.target.value
                         )
                     }
-                />
+                />}
 
                 <input
                     className="w-full h-11 px-3 rounded-lg bg-[#232321] border border-[#534B52] text-white text-sm outline-none focus:border-[#8A8D91] transition-colors"
@@ -86,6 +85,7 @@ return(
                 <input
                     className="w-full h-11 px-3 rounded-lg bg-[#232321] border border-[#534B52] text-white text-sm outline-none focus:border-[#8A8D91] transition-colors"
                     type="password"
+                    minLength={isSignIn ? undefined : 8}
                     placeholder="Password"
                     value={password}
                     onChange={(e)=>
@@ -94,6 +94,12 @@ return(
                         )
                     }
                 />
+
+                {!isSignIn && (
+                    <p className="text-[11px] text-[#8A8D91] px-1">
+                        Use a strong password with at least 8 characters.
+                    </p>
+                )}
 
                 {
                     error &&
@@ -111,14 +117,28 @@ return(
                 </button>
 
                 <button
-                    onClick={handleRegister}
+                    onClick={handleSubmit}
                     disabled={loading}
                     className="px-4 py-2 rounded-lg bg-fuchsia-600 hover:bg-fuchsia-500 disabled:opacity-50 text-white text-sm font-medium transition-colors cursor-pointer"
                 >{
                         loading
-                            ? 'Creating...'
-                            : 'Create Profile'
+                            ? (isSignIn ? 'Signing in...' : 'Creating...')
+                            : (isSignIn ? 'Sign In' : 'Create Profile')
                     }
+                </button>
+            </div>
+
+            <div className="text-center mt-4 text-xs text-[#8A8D91]">
+                {isSignIn ? 'New to TagMind? ' : 'Already have an account? '}
+                <button
+                    type="button"
+                    onClick={() => {
+                        setIsSignIn(!isSignIn)
+                        setError('')
+                    }}
+                    className="text-fuchsia-400 hover:text-fuchsia-300 font-medium cursor-pointer"
+                >
+                    {isSignIn ? 'Create an account.' : 'Sign in.'}
                 </button>
             </div>
         </div>

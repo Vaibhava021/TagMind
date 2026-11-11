@@ -1,6 +1,7 @@
 from rest_framework import viewsets
 from rest_framework import generics
-from rest_framework.permissions import (AllowAny)
+from rest_framework.permissions import AllowAny
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -9,28 +10,42 @@ from accounts.models import UserProfile
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 from django.utils.crypto import get_random_string
-from .serializers import LoginSerializer
-from .serializers import UserProfileSerializer,RegisterSerializer, LoginSerializer, VaultPasswordSerializer, VaultUnlockSerializer, VaultChangeSerializer
+from .serializers import (
+    UserProfileSerializer,
+    RegisterSerializer,
+    LoginSerializer,
+    VaultPasswordSerializer,
+    VaultUnlockSerializer,
+    VaultChangeSerializer,
+)
 from django.contrib.auth.hashers import make_password, check_password 
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 from django.http import JsonResponse
 from django.conf import settings
+from rest_framework.throttling import ScopedRateThrottle
+from accounts.vault_tokens import issue_vault_token
 
 
 class UserProfileViewSet(viewsets.ModelViewSet):
-    queryset = UserProfile.objects.all()
     serializer_class = (UserProfileSerializer)
+
+    def get_queryset(self):
+        return UserProfile.objects.filter(user=self.request.user)
 
 
 class RegisterView(generics.CreateAPIView):
     serializer_class = (RegisterSerializer)
     permission_classes = [AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "register"
 
 
 class LoginView(generics.GenericAPIView):
     serializer_class = LoginSerializer
     permission_classes = [AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "login"
 
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
@@ -38,12 +53,8 @@ class LoginView(generics.GenericAPIView):
         email = serializer.validated_data['email']
         password = serializer.validated_data['password']
 
-        try:
-            user_obj = User.objects.get(
-                email=email
-            )
-
-        except User.DoesNotExist:
+        matching_users = User.objects.filter(email__iexact=email)
+        if matching_users.count() != 1:
             return Response(
                 {
                     "success": False,
@@ -52,6 +63,7 @@ class LoginView(generics.GenericAPIView):
                 status=status.HTTP_401_UNAUTHORIZED
             )
 
+        user_obj = matching_users.first()
         user = authenticate(
             username=user_obj.username,
             password=password
@@ -66,9 +78,11 @@ class LoginView(generics.GenericAPIView):
                 status=status.HTTP_401_UNAUTHORIZED
             )
 
-        refresh = RefreshToken.for_user(
-            user
+        profile, _ = UserProfile.objects.get_or_create(
+            user=user,
+            defaults={'provider': 'email'},
         )
+        refresh = RefreshToken.for_user(user)
 
         return Response({
             "success": True,
@@ -82,10 +96,8 @@ class LoginView(generics.GenericAPIView):
                 user.username,
             "email":
                 user.email,
-            "provider":
-                user.profile.provider,
-            "accent_color":
-                user.profile.accent_color
+            "provider": profile.provider,
+            "accent_color": profile.accent_color
         })
 
 
@@ -106,11 +118,25 @@ class GoogleLoginView(APIView):
             )
 
         try:
-            idinfo = id_token.verify_oauth2_token(token,google_requests.Request())
+            if not settings.GOOGLE_OAUTH_CLIENT_ID:
+                return Response(
+                    {'success': False, 'message': 'Google login is not configured'},
+                    status=503,
+                )
+
+            idinfo = id_token.verify_oauth2_token(
+                token,
+                google_requests.Request(),
+                audience=settings.GOOGLE_OAUTH_CLIENT_ID,
+            )
+
+            if not idinfo.get('email_verified'):
+                return Response(
+                    {'success': False, 'message': 'Google email is not verified'},
+                    status=400,
+                )
 
             email = idinfo['email']
-            name = idinfo.get('name',email.split('@')[0])
-
         except Exception:
             return Response(
                 {
@@ -143,6 +169,7 @@ class GoogleLoginView(APIView):
             'access': str(refresh.access_token),
             'refresh': str(refresh),
             'user_id': user.id,
+            'profile_id': profile.id,
             'username': user.username,
             'email': user.email,
             'provider': profile.provider,
@@ -151,8 +178,9 @@ class GoogleLoginView(APIView):
     
 
 class SetVaultPasswordView(APIView):
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "vault"
 
-    permission_classes = [AllowAny]
     def post(self, request):
         serializer = (VaultPasswordSerializer(data=request.data))
         serializer.is_valid(raise_exception=True)
@@ -165,9 +193,7 @@ class SetVaultPasswordView(APIView):
             serializer.validated_data['password']
         )
 
-        profile = (
-            UserProfile.objects.get(id=profile_id)
-        )
+        profile = self._get_owned_profile(request, profile_id)
 
         if profile.vault_password_hash:
             return Response(
@@ -182,14 +208,28 @@ class SetVaultPasswordView(APIView):
         profile.vault_password_hash = (make_password(password))
 
         profile.save()
-        return Response({'success': True})
+        return Response({
+            'success': True,
+            'vault_token': issue_vault_token(profile),
+        })
+
+    @staticmethod
+    def _get_owned_profile(request, profile_id):
+        try:
+            profile = UserProfile.objects.get(id=profile_id)
+        except UserProfile.DoesNotExist:
+            from rest_framework.exceptions import NotFound
+            raise NotFound('Profile not found')
+        if profile.user_id != request.user.id:
+            raise PermissionDenied('Profile does not belong to the authenticated user')
+        return profile
     
 
 class UnlockVaultView(
     APIView
 ):
-
-    permission_classes = [AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "vault"
 
     def post(self, request):
 
@@ -209,22 +249,22 @@ class UnlockVaultView(
             serializer.validated_data['password']
                     )
 
-        profile = (
-            UserProfile.objects.get(id=profile_id)
-        )
+        profile = SetVaultPasswordView._get_owned_profile(request, profile_id)
 
         valid = check_password(
             password,
             profile.vault_password_hash
         )
 
-        return Response({'success': valid})
+        return Response({
+            'success': valid,
+            'vault_token': issue_vault_token(profile) if valid else None,
+        })
     
 
 class ChangeVaultPasswordView(APIView):
-
-
-    permission_classes = [AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "vault"
 
     def post(self, request):
 
@@ -248,9 +288,7 @@ class ChangeVaultPasswordView(APIView):
             serializer.validated_data['new_password']
         )
 
-        profile = (
-            UserProfile.objects.get(id=profile_id)
-        )
+        profile = SetVaultPasswordView._get_owned_profile(request, profile_id)
 
         valid = check_password(
             old_password,

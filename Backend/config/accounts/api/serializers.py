@@ -1,6 +1,8 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from accounts.models import UserProfile
+from django.contrib.auth.password_validation import validate_password
+from django.db import transaction
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
@@ -38,8 +40,12 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     password = serializers.CharField(
         write_only=True,
-        min_length=6
+        min_length=8
     )
+
+    def validate_password(self, value):
+        validate_password(value)
+        return value
 
     class Meta:
 
@@ -54,7 +60,7 @@ class RegisterSerializer(serializers.ModelSerializer):
     def validate_email(self, value):
 
         if User.objects.filter(
-            email=value
+            email__iexact=value
         ).exists():
 
             raise serializers.ValidationError(
@@ -64,17 +70,17 @@ class RegisterSerializer(serializers.ModelSerializer):
         return value
 
     def create(self, validated_data):
+        with transaction.atomic():
+            user = User.objects.create_user(
+                username=validated_data['username'],
+                email=validated_data['email'],
+                password=validated_data['password']
+            )
 
-        user = User.objects.create_user(
-            username=validated_data['username'],
-            email=validated_data['email'],
-            password=validated_data['password']
-        )
-
-        UserProfile.objects.create(
-            user=user,
-            provider='email'
-        )
+            UserProfile.objects.create(
+                user=user,
+                provider='email'
+            )
 
         return user
     
@@ -88,7 +94,7 @@ class LoginSerializer(serializers.Serializer):
 
 class VaultPasswordSerializer(serializers.Serializer):
     profile_id = serializers.IntegerField()
-    password = serializers.CharField(write_only=True, 
+    password = serializers.CharField(write_only=True,
                                      min_length=4)
 
 

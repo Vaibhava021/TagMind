@@ -8,6 +8,8 @@
   import { useSessionAuth } from './Hooks/useChromeStorage'
   import { NavigationContext } from './context/NavigationContext'
   import Startup from './Pages/Startup'
+import { authenticatedFetch } from './api/session'
+import './api/axiosAuth'
 
   const App = () => {
     const { currentScreen, navigate } = useNavigation()
@@ -42,7 +44,7 @@
       // retry fetching account 3 times if failure occurs 
       for (let attempt = 0; attempt < 3; attempt++) {
         try{
-          const res = await fetch(url)
+          const res = await authenticatedFetch(url)
 
           if(!res.ok){
             throw new Error(`Failed to fetch accounts (HTTP ${res.status})`)

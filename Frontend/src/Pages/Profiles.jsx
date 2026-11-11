@@ -4,6 +4,7 @@ import RegisterModal from '../Components/Dashboard/RegisterModal'
 import { getGoogleToken } from '../api/googleExtensionAuth'
 import { googleLogin } from '../api/googleAuth'
 import { useNavigation } from '../context/NavigationContext'
+import { setAccessToken } from '../api/session'
 
 const ProfileSelector = ({
   selectedProfile,
@@ -26,6 +27,7 @@ const ProfileSelector = ({
     try {
       const token = await getGoogleToken()
       const result = await googleLogin(token)
+      await setAccessToken(result.access)
 
       console.log('Backend Response:', result)
 
@@ -181,13 +183,13 @@ const ProfileSelector = ({
             <div className="flex-1 border-t border-zinc-800" />
           </div>
 
-          <button
+          {/* <button
             className="flex items-center justify-center gap-2.5 w-full py-1.5 mb-2 rounded-lg border border-zinc-700 bg-transparent hover:bg-zinc-800/50 text-white text-[12px] font-medium transition-colors cursor-pointer"
             onClick={handleGoogleLogin}
           >
             <i className="ri-google-fill text-lg" />
             Continue with Google
-          </button>
+          </button> */}
 
           <button
             className="flex items-center justify-center gap-2.5 w-full py-1.5 rounded-lg border border-zinc-700 bg-transparent hover:bg-zinc-800/50 text-white text-[12px] font-medium transition-colors cursor-pointer"

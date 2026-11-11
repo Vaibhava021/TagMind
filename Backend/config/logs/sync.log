@@ -1,0 +1,36 @@
+2026-11-06 23:19:16,565 | INFO | bookmarks.sync | Sync event claimed. event_id=1 attempt=1
+2026-11-06 23:19:16,568 | INFO | bookmarks.sync | Sync event claimed. event_id=1 attempt=1
+2026-11-06 23:19:16,569 | WARNING | bookmarks.sync | Stale sync events recovered. recovered_count=1
+2026-11-06 23:19:16,570 | WARNING | bookmarks.sync | Sync heartbeat rejected: claim ownership lost. event_id=1
+2026-11-06 23:19:17,423 | INFO | bookmarks.sync | Sync event claimed. event_id=1 attempt=1
+2026-11-06 23:19:17,424 | WARNING | bookmarks.sync | Sync event retry scheduled. event_id=1 error_code=network_timeout attempt=1 retry_at=2026-11-06T17:49:22.645433+00:00
+2026-11-06 23:19:17,851 | INFO | bookmarks.sync | Sync event claimed. event_id=1 attempt=1
+2026-11-06 23:19:17,856 | WARNING | bookmarks.sync | Stale sync events recovered. recovered_count=1
+2026-11-06 23:22:45,141 | INFO | bookmarks.sync | Sync event claimed. event_id=1 attempt=1
+2026-11-06 23:24:53,928 | INFO | bookmarks.sync | Sync event claimed. event_id=1 attempt=1
+2026-11-06 23:24:54,342 | INFO | bookmarks.sync | Sync event claimed. event_id=2 attempt=1
+2026-11-06 23:27:24,243 | INFO | bookmarks.sync | Sync event claimed. event_id=1 attempt=1
+2026-11-06 23:27:24,247 | INFO | bookmarks.sync | Sync event claimed. event_id=2 attempt=1
+2026-11-06 23:27:24,249 | INFO | bookmarks.sync | Sync event claimed. event_id=3 attempt=1
+2026-11-06 23:27:24,666 | INFO | bookmarks.sync | Sync event claimed. event_id=4 attempt=1
+2026-11-06 23:31:04,384 | INFO | bookmarks.sync | Sync event claimed. event_id=1 attempt=1
+2026-11-06 23:31:04,387 | INFO | bookmarks.sync | Sync event claimed. event_id=2 attempt=1
+2026-11-06 23:31:04,391 | INFO | bookmarks.sync | Sync event claimed. event_id=3 attempt=1
+2026-11-06 23:31:04,836 | INFO | bookmarks.sync | Sync event claimed. event_id=4 attempt=1
+2026-11-06 23:41:53,270 | INFO | bookmarks.sync | Sync event claimed. event_id=1 attempt=1
+2026-11-06 23:41:53,273 | INFO | bookmarks.sync | Sync event claimed. event_id=2 attempt=1
+2026-11-06 23:41:53,709 | INFO | bookmarks.sync | Sync event claimed. event_id=3 attempt=1
+2026-11-06 23:43:53,707 | INFO | bookmarks.sync | Sync event claimed. event_id=1 attempt=1
+2026-11-06 23:43:53,733 | INFO | bookmarks.sync | Sync event claimed. event_id=2 attempt=1
+2026-11-06 23:43:53,766 | INFO | bookmarks.sync | Sync event claimed. event_id=3 attempt=1
+2026-11-06 23:43:53,797 | INFO | bookmarks.sync | Sync event claimed. event_id=4 attempt=1
+2026-11-06 23:43:53,827 | INFO | bookmarks.sync | Sync event claimed. event_id=5 attempt=1
+2026-11-06 23:43:53,858 | INFO | bookmarks.sync | Sync event claimed. event_id=6 attempt=1
+2026-11-06 23:43:53,889 | INFO | bookmarks.sync | Sync event claimed. event_id=7 attempt=1
+2026-11-06 23:43:53,920 | INFO | bookmarks.sync | Sync event claimed. event_id=8 attempt=1
+2026-11-06 23:43:53,951 | INFO | bookmarks.sync | Sync event claimed. event_id=9 attempt=1
+2026-11-06 23:43:53,984 | INFO | bookmarks.sync | Sync event claimed. event_id=10 attempt=1
+2026-11-06 23:43:54,560 | INFO | bookmarks.sync | Sync event claimed. event_id=11 attempt=1
+2026-11-11 12:58:56,730 | INFO | bookmarks.sync | Sync event claimed. event_id=8 attempt=1
+2026-11-11 12:58:56,759 | INFO | bookmarks.sync | Sync event claimed. event_id=9 attempt=1
+2026-11-11 12:58:56,776 | INFO | bookmarks.sync | Sync event claimed. event_id=10 attempt=1

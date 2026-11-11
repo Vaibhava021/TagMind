@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useRef } from 'react'
 import ProgressBar from './ProgressBar'
+import { clearVaultToken } from '../../api/session'
 
-const StatsPanel = ({accounts, setAccounts, selectedProfile, setSelectedProfile, bookmarks, LogState, setLogState, onvaultOpen, setIsvaultOpen, isvaultOpen}) => {
+const StatsPanel = ({accounts, selectedProfile, bookmarks, setLogState, onvaultOpen, setIsvaultOpen, isvaultOpen}) => {
 
   const holdTimerRef = useRef(null)
 
@@ -92,7 +93,8 @@ const StatsPanel = ({accounts, setAccounts, selectedProfile, setSelectedProfile,
           onClick={()=>{
             if (isvaultOpen){
               setIsvaultOpen(false)
-              chrome.storage.session.remove('vaultOpen')
+              globalThis.chrome?.storage?.session?.remove('vaultOpen')
+              clearVaultToken()
             }
           }}
           >

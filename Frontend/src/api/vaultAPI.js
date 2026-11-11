@@ -1,6 +1,8 @@
+import { authenticatedFetch } from './session'
+
 export async function setVaultPassword(profile_id, password){
 
-    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}accounts/set-vault-password/`,
+    const response = await authenticatedFetch(`${import.meta.env.VITE_API_BASE_URL}accounts/set-vault-password/`,
 
         {
             method: 'POST',
@@ -28,7 +30,7 @@ export async function setVaultPassword(profile_id, password){
 
 export async function unlockVault(profile_id, password){
 
-    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}accounts/unlock-vault/`,
+    const response = await authenticatedFetch(`${import.meta.env.VITE_API_BASE_URL}accounts/unlock-vault/`,
 
         {
             method: 'POST',
@@ -55,7 +57,7 @@ export async function unlockVault(profile_id, password){
 
 export async function changeVaultPassword(profile_id, old_password, new_password){
 
-    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}accounts/change-vault-password/`,
+    const response = await authenticatedFetch(`${import.meta.env.VITE_API_BASE_URL}accounts/change-vault-password/`,
 
         {
             method: 'POST',

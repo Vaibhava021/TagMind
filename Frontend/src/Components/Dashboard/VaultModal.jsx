@@ -1,8 +1,9 @@
 import React, { useMemo, useState } from 'react'
 import { setVaultPassword, unlockVault } from '../../api/vaultAPI'
+import { setVaultToken } from '../../api/session'
 
 
-const VaultModal = ({ onClose, selectedProfile, accounts, isvaultOpen, setIsvaultOpen, refreshAccounts, setAccounts }) => {
+const VaultModal = ({ onClose, selectedProfile, accounts, setIsvaultOpen, refreshAccounts, setAccounts }) => {
 
     const [password, setPassword] = useState('')
     const [confirmPassword, setConfirmPassword] = useState('')
@@ -28,7 +29,8 @@ const VaultModal = ({ onClose, selectedProfile, accounts, isvaultOpen, setIsvaul
         }
 
         // Create the vault on the backend first.
-        await setVaultPassword(selectedProfile, password)
+        const result = await setVaultPassword(selectedProfile, password)
+        await setVaultToken(result.vault_token)
 
         // Update central account state after backend success.
         setAccounts(prev =>
@@ -39,7 +41,7 @@ const VaultModal = ({ onClose, selectedProfile, accounts, isvaultOpen, setIsvaul
         )
         )
 
-        await chrome.storage.session.set({ vaultOpen: true })
+        await globalThis.chrome?.storage?.session?.set({ vaultOpen: true })
         setIsvaultOpen(true)
         onClose()
 
@@ -63,7 +65,9 @@ const VaultModal = ({ onClose, selectedProfile, accounts, isvaultOpen, setIsvaul
             if(!result.success){
                 throw new Error('Wrong password')}
 
-            await chrome.storage.session.set({vaultOpen: true})
+            await setVaultToken(result.vault_token)
+
+            await globalThis.chrome?.storage?.session?.set({vaultOpen: true})
             setIsvaultOpen(true)
             onClose()
         }
