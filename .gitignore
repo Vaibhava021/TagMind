@@ -7,12 +7,12 @@ build/
 /frontend/.env
 /frontend/release/
 
-#Django
-/backend/.venv
-/backend/config/*.sqlite3
+# Django
+/Backend/.venv/
+/Backend/**/*.sqlite3
+
+__pycache__/
+*.py[cod]
 
 #Personal files / extra for development
 something.txt
-
-/backend/config/config/__pycache__/
-/backend/config/config/*.py[cod]
