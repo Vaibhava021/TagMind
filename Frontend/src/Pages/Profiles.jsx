@@ -4,10 +4,13 @@ import RegisterModal from '../Components/Dashboard/RegisterModal'
 import { getGoogleToken } from '../api/googleExtensionAuth'
 import { googleLogin } from '../api/googleAuth'
 import { useNavigation } from '../context/NavigationContext'
-import { setAccessToken, setSelectedProfile as persistSelectedProfile } from '../api/session'
+import {
+  getAccessToken,
+  setAccessToken,
+  setSelectedProfile as persistSelectedProfile,
+} from '../api/session'
 
 const ProfileSelector = ({
-  selectedProfile,
   setSelectedProfile,
   accounts,
   refreshAccounts,
@@ -16,6 +19,7 @@ const ProfileSelector = ({
 
   const [selectedId, setSelectedId] = useState('')
   const [showRegister, setShowRegister] = useState(false)
+  const [loginTarget, setLoginTarget] = useState(null)
 
   // Refresh accounts through App.jsx.
   // refreshAccounts updates the shared accounts state itself.
@@ -23,7 +27,7 @@ const ProfileSelector = ({
     return await refreshAccounts()
   }
 
-  const handleGoogleLogin = async () => {
+  const _handleGoogleLogin = async () => {
     try {
       const token = await getGoogleToken()
       const result = await googleLogin(token)
@@ -108,6 +112,12 @@ const ProfileSelector = ({
                   e.stopPropagation()
 
                   try {
+                    const token = await getAccessToken()
+                    if (!token) {
+                      setLoginTarget(acc)
+                      setShowRegister(true)
+                      return
+                    }
                     await persistSelectedProfile(acc.id)
 
                     setSelectedProfile(acc.id)
@@ -202,7 +212,22 @@ const ProfileSelector = ({
       {showRegister && (
         <RegisterModal
           fetchData={fetchData}
-          onClose={() => setShowRegister(false)}
+          initialEmail={loginTarget?.email || ''}
+          startInSignIn={Boolean(loginTarget)}
+          onSignedIn={async session => {
+            if (
+              loginTarget &&
+              session.email?.toLowerCase() === loginTarget.email?.toLowerCase()
+            ) {
+              await persistSelectedProfile(loginTarget.id)
+              setSelectedProfile(loginTarget.id)
+              navigate('dashboard')
+            }
+          }}
+          onClose={() => {
+            setShowRegister(false)
+            setLoginTarget(null)
+          }}
         />
       )}
     </>

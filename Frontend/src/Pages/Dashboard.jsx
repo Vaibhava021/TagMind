@@ -33,6 +33,7 @@ import { authenticatedFetch, clearVaultToken, getVaultTokenExpiry } from '../api
 
     const [bookmarks, setBookmarks] = useState([])
     const [folderData, setFolderData] = useState([])
+    const [fetchError, setFetchError] = useState('')
 
     // Posting data to api 
     const [isPosting, setIsPosting] = useState(false)
@@ -52,7 +53,10 @@ import { authenticatedFetch, clearVaultToken, getVaultTokenExpiry } from '../api
               await globalThis.chrome.storage.session.remove('vaultOpen')
             }
           }
-          throw new Error('Unable to load bookmarks. Please sign in again.')
+          const status = !bookmarkRes.ok ? bookmarkRes.status : folderRes.status
+          throw new Error(status === 401
+            ? 'Your sign-in session could not be refreshed. Sign in again to load your bookmarks.'
+            : `Unable to load bookmarks (HTTP ${status}). Check your connection and retry.`)
         }
 
         const bookmarkData = await bookmarkRes.json()
@@ -60,6 +64,7 @@ import { authenticatedFetch, clearVaultToken, getVaultTokenExpiry } from '../api
 
         setBookmarks(bookmarkData)
         setFolderData(folderData)
+        setFetchError('')
         // console.log(
         //       "Fetched Bookmarks:",
         //       bookmarkData.length
@@ -72,6 +77,7 @@ import { authenticatedFetch, clearVaultToken, getVaultTokenExpiry } from '../api
       }
       catch(err){
         console.error(err)
+        setFetchError(err.message || 'Unable to load bookmarks. Check your connection and retry.')
       }
     }, [selectedProfile, isvaultOpen, setIsvaultOpen])
 
@@ -141,6 +147,19 @@ import { authenticatedFetch, clearVaultToken, getVaultTokenExpiry } from '../api
                         setDevice={setDevice}
                         isLoading_Device={isLoading_Device}
                         />
+
+          {fetchError && (
+            <div className="mx-3 mt-2 rounded-lg border border-amber-700/50 bg-amber-950/40 px-3 py-2 text-xs text-amber-200" role="alert">
+              <div className="flex items-center justify-between gap-3">
+                <span>{fetchError}</span>
+                <button
+                  type="button"
+                  onClick={fetchData}
+                  className="shrink-0 underline underline-offset-2"
+                >Retry</button>
+              </div>
+            </div>
+          )}
 
           <div className='flex flex-1 min-h-0'>
               <Leftpanel

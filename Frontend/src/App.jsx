@@ -5,10 +5,14 @@
   import Login           from './Pages/Login'
   import GoogleLogin     from './Pages/GoogleLogin'
   import LoggingOut      from './Pages/LoggingOut'
-  import { useSessionAuth } from './Hooks/useChromeStorage'
   import { NavigationContext } from './context/NavigationContext'
   import Startup from './Pages/Startup'
-import { authenticatedFetch, getSelectedProfile } from './api/session'
+import {
+  authenticatedFetch,
+  getCachedProfiles,
+  getSelectedProfile,
+  setCachedProfiles,
+} from './api/session'
 import './api/axiosAuth'
 
   const App = () => {
@@ -18,12 +22,11 @@ import './api/axiosAuth'
     const profileRef = useRef(null)                              
 
     const [accounts, setAccounts]                 = useState([])
-    const { isAuthenticated, setIsAuthenticated } = useSessionAuth()
     const [LogState, setLogState]                 = useState(null)
     const [isvaultOpen, setIsvaultOpen]           = useState(false)
 
-    const [accountsStatus, setAccountsStatus] = useState('loading')
-    const [accountsError, setAccountsError] = useState(null)
+    const [, setAccountsStatus] = useState('loading')
+    const [, setAccountsError] = useState(null)
 
     // const refreshAccounts = async () => {
     //   const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}accounts/profiles/`);
@@ -56,6 +59,7 @@ import './api/axiosAuth'
           }
 
           setAccounts(profileList)
+          await setCachedProfiles(profileList)
           setAccountsStatus('success')
           setAccountsError(null)
 
@@ -80,6 +84,12 @@ import './api/axiosAuth'
                                               }
 
     useEffect(() => {
+      getCachedProfiles().then(cachedProfiles => {
+        if (cachedProfiles.length) {
+          setAccounts(current => current.length ? current : cachedProfiles)
+        }
+      })
+
       getSelectedProfile().then(profileId => {
         if (profileId) {
           handleSetSelectedProfile(profileId)
@@ -93,7 +103,7 @@ import './api/axiosAuth'
       if (!backendReady) return;
       refreshAccounts();
       // console.log('App context object:', NavigationContext)
-    }, [backendReady])
+    }, [backendReady, navigate])
 
 
     const profileProps = {

@@ -2,14 +2,20 @@ import React, { useState } from 'react'
 import { loginUser, registerUser } from '../../api/authApi'
 import { setAuthTokens } from '../../api/session'
 
-export default function RegisterModal({fetchData,onClose}){
+export default function RegisterModal({
+    fetchData,
+    onClose,
+    onSignedIn,
+    initialEmail = '',
+    startInSignIn = false,
+}){
 
     const [username,setUsername] = useState('')
-    const [email,setEmail] = useState('')
+    const [email,setEmail] = useState(initialEmail)
     const [password,setPassword] = useState('')
     const [loading,setLoading] = useState(false)
     const [error,setError] = useState('')
-    const [isSignIn,setIsSignIn] = useState(false)
+    const [isSignIn,setIsSignIn] = useState(startInSignIn)
 
     const handleSubmit = async ()=>{
         try{
@@ -25,6 +31,7 @@ export default function RegisterModal({fetchData,onClose}){
             if (!refreshed) {
                 throw new Error('Signed in, but the profile list could not be loaded.')
             }
+            await onSignedIn?.(session)
             onClose()
         }
         catch(err){

@@ -3,6 +3,7 @@ const REFRESH_KEY = 'tagmindRefreshToken'
 const VAULT_TOKEN_KEY = 'tagmindVaultToken'
 const VAULT_EXPIRY_KEY = 'tagmindVaultTokenExpiresAt'
 const SELECTED_PROFILE_KEY = 'selectedProfile'
+const CACHED_PROFILES_KEY = 'tagmindCachedProfiles'
 const VAULT_SESSION_MILLISECONDS = 14 * 60 * 1000
 let refreshInProgress = null
 
@@ -65,6 +66,19 @@ export async function getAccessToken() {
   return getPersistentValue(TOKEN_KEY)
 }
 
+function getTokenExpiry(token) {
+  try {
+    const payload = token.split('.')[1]
+    if (!payload) return 0
+    const base64 = payload.replace(/-/g, '+').replace(/_/g, '/')
+    const normalized = base64.padEnd(base64.length + ((4 - base64.length % 4) % 4), '=')
+    const decoded = JSON.parse(atob(normalized))
+    return Number(decoded.exp) || 0
+  } catch {
+    return 0
+  }
+}
+
 export async function setAccessToken(token) {
   await setPersistentValue(TOKEN_KEY, token)
   await setPersistentValue(REFRESH_KEY, null)
@@ -85,6 +99,20 @@ export async function setSelectedProfile(profileId) {
 
 export async function clearSelectedProfile() {
   return setPersistentValue(SELECTED_PROFILE_KEY, null)
+}
+
+export async function getCachedProfiles() {
+  const profiles = await getPersistentValue(CACHED_PROFILES_KEY)
+  if (Array.isArray(profiles)) return profiles
+  try {
+    return JSON.parse(profiles || '[]')
+  } catch {
+    return []
+  }
+}
+
+export async function setCachedProfiles(profiles) {
+  return setPersistentValue(CACHED_PROFILES_KEY, JSON.stringify(profiles))
 }
 
 export async function getVaultToken() {
@@ -156,6 +184,17 @@ export async function refreshAccessToken() {
   return refreshInProgress
 }
 
+async function getUsableAccessToken() {
+  const token = await getAccessToken()
+  const expiresAt = getTokenExpiry(token || '')
+  // Refresh shortly before expiry so popup startup does not issue requests
+  // with a token that expires while the API calls are in flight.
+  if (!token || !expiresAt || expiresAt <= Math.floor(Date.now() / 1000) + 30) {
+    return (await refreshAccessToken()) || token
+  }
+  return token
+}
+
 export async function authenticatedFetch(url, options = {}) {
   const send = async token => {
     const headers = new Headers(options.headers || {})
@@ -165,7 +204,7 @@ export async function authenticatedFetch(url, options = {}) {
     return fetch(url, { ...options, headers })
   }
 
-  let response = await send(await getAccessToken())
+  let response = await send(await getUsableAccessToken())
   if (response.status === 401) {
     const refreshed = await refreshAccessToken()
     if (refreshed) response = await send(refreshed)
@@ -175,7 +214,7 @@ export async function authenticatedFetch(url, options = {}) {
 
 export async function installAxiosAuthentication(axios) {
   axios.interceptors.request.use(async config => {
-    const token = await getAccessToken()
+    const token = await getUsableAccessToken()
     if (token) {
       config.headers = config.headers || {}
       config.headers.Authorization = `Bearer ${token}`
