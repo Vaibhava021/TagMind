@@ -14,5 +14,5 @@ build/
 #Personal files / extra for development
 something.txt
 
-__pycache__/
-*.py[cod]
+/backend/__pycache__/
+/backend/*.py[cod]
