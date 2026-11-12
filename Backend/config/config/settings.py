@@ -74,7 +74,7 @@ if not DEBUG and not _allowed_hosts_value:
 
 ALLOWED_HOSTS = [
     host.strip()
-    for host in (_allowed_hosts_value or "localhost,127.0.0.1,[::1]").split(",")
+    for host in (_allowed_hosts_value or "vaibhavagrawal.pythonanywhere.com,localhost,127.0.0.1,[::1]").split(",")
     if host.strip()
 ]
 
