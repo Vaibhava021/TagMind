@@ -100,7 +100,7 @@ CORS_ALLOWED_ORIGINS = [
     origin.strip()
     for origin in os.environ.get(
         "CORS_ALLOWED_ORIGINS",
-        "http://localhost:5173,chrome-extension://iapnckatfjgkonflpcaljlhfjmkpmpble,chrome-extension://iidlnimooplfabkjhgmeliempcnkfoin",
+        "http://localhost:5173",
     ).split(",")
     if origin.strip()
 ]
@@ -108,13 +108,11 @@ CORS_ALLOWED_ORIGINS = [
 # Unpacked development extensions may receive a different ID after a
 # rebuild. Keep this broad extension-origin rule local to DEBUG mode;
 # production relies on the explicit CORS_ALLOWED_ORIGINS list above.
-CORS_ALLOWED_ORIGIN_REGEXES = (
-    [r"^chrome-extension://[a-p]{32}$"] if DEBUG else []
-)
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^chrome-extension://[a-p]{32}$",
+]
 
-CORS_ALLOW_ALL_ORIGINS = DEBUG and os.environ.get(
-    "CORS_ALLOW_ALL_ORIGINS", "false"
-).strip().lower() in {"1", "true", "yes", "on"}
+CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOW_CREDENTIALS = False
 CORS_ALLOW_HEADERS = (*default_headers, "x-vault-token")
 
