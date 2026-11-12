@@ -2,6 +2,7 @@ const TOKEN_KEY = 'tagmindAccessToken'
 const REFRESH_KEY = 'tagmindRefreshToken'
 const VAULT_TOKEN_KEY = 'tagmindVaultToken'
 const VAULT_EXPIRY_KEY = 'tagmindVaultTokenExpiresAt'
+const SELECTED_PROFILE_KEY = 'selectedProfile'
 const VAULT_SESSION_MILLISECONDS = 14 * 60 * 1000
 let refreshInProgress = null
 
@@ -23,18 +24,67 @@ async function setStoredValue(key, value) {
   else window.sessionStorage?.removeItem(key)
 }
 
+// Account authentication and profile selection should survive extension and
+// backend restarts. Vault unlock state intentionally remains session-only.
+async function getPersistentValue(key) {
+  if (typeof globalThis.chrome !== 'undefined' && globalThis.chrome.storage?.local) {
+    const result = await globalThis.chrome.storage.local.get(key)
+    if (result[key]) return result[key]
+
+    // Migrate values written by earlier versions that used session storage.
+    if (globalThis.chrome.storage.session) {
+      const previous = await globalThis.chrome.storage.session.get(key)
+      if (previous[key]) {
+        await globalThis.chrome.storage.local.set({ [key]: previous[key] })
+        await globalThis.chrome.storage.session.remove(key)
+        return previous[key]
+      }
+    }
+    return null
+  }
+  return window.localStorage?.getItem(key) || null
+}
+
+async function setPersistentValue(key, value) {
+  if (typeof globalThis.chrome !== 'undefined' && globalThis.chrome.storage?.local) {
+    if (value !== null && value !== undefined) {
+      await globalThis.chrome.storage.local.set({ [key]: value })
+    } else {
+      await globalThis.chrome.storage.local.remove(key)
+    }
+    if (globalThis.chrome.storage.session) {
+      await globalThis.chrome.storage.session.remove(key)
+    }
+    return
+  }
+  if (value !== null && value !== undefined) window.localStorage?.setItem(key, value)
+  else window.localStorage?.removeItem(key)
+}
+
 export async function getAccessToken() {
-  return getStoredValue(TOKEN_KEY)
+  return getPersistentValue(TOKEN_KEY)
 }
 
 export async function setAccessToken(token) {
-  await setStoredValue(TOKEN_KEY, token)
-  await setStoredValue(REFRESH_KEY, null)
+  await setPersistentValue(TOKEN_KEY, token)
+  await setPersistentValue(REFRESH_KEY, null)
 }
 
 export async function setAuthTokens(accessToken, refreshToken) {
-  await setStoredValue(TOKEN_KEY, accessToken)
-  await setStoredValue(REFRESH_KEY, refreshToken)
+  await setPersistentValue(TOKEN_KEY, accessToken)
+  await setPersistentValue(REFRESH_KEY, refreshToken)
+}
+
+export async function getSelectedProfile() {
+  return getPersistentValue(SELECTED_PROFILE_KEY)
+}
+
+export async function setSelectedProfile(profileId) {
+  return setPersistentValue(SELECTED_PROFILE_KEY, profileId)
+}
+
+export async function clearSelectedProfile() {
+  return setPersistentValue(SELECTED_PROFILE_KEY, null)
 }
 
 export async function getVaultToken() {
@@ -68,8 +118,8 @@ export async function clearVaultToken() {
 
 export async function clearAccessToken() {
   await Promise.all([
-    setStoredValue(TOKEN_KEY, null),
-    setStoredValue(REFRESH_KEY, null),
+    setPersistentValue(TOKEN_KEY, null),
+    setPersistentValue(REFRESH_KEY, null),
     clearVaultToken(),
   ])
 }
@@ -77,7 +127,7 @@ export async function clearAccessToken() {
 export async function refreshAccessToken() {
   if (!refreshInProgress) {
     refreshInProgress = (async () => {
-      const refresh = await getStoredValue(REFRESH_KEY)
+      const refresh = await getPersistentValue(REFRESH_KEY)
       if (!refresh) return null
 
       try {
@@ -94,7 +144,7 @@ export async function refreshAccessToken() {
           return null
         }
         const data = await response.json()
-        await setStoredValue(TOKEN_KEY, data.access)
+        await setPersistentValue(TOKEN_KEY, data.access)
         return data.access
       } catch {
         return null

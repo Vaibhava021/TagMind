@@ -1,6 +1,6 @@
 import React from 'react'
 import { useNavigation } from '../context/NavigationContext';
-import { clearAccessToken } from '../api/session';
+import { clearAccessToken, clearSelectedProfile } from '../api/session';
 
 const LoggingOut = ({setSelectedProfile, setLogState, setIsvaultOpen}) => {
   const { navigate } = useNavigation();
@@ -22,17 +22,12 @@ const LoggingOut = ({setSelectedProfile, setLogState, setIsvaultOpen}) => {
             <button 
               onClick={async () => {
                 try {
-                  if (
-                    typeof chrome !== 'undefined' &&
-                    chrome.storage?.session
-                  ) {
-                    await chrome.storage.session.remove([
-                      'selectedProfile',
-                      'vaultOpen',
-                    ]);
+                  if (globalThis.chrome?.storage?.session) {
+                    await globalThis.chrome.storage.session.remove('vaultOpen');
                   }
+                  await clearSelectedProfile();
                 } catch (error) {
-                  console.error('Failed to clear session storage:', error);
+                  console.error('Failed to clear stored profile selection:', error);
                 } finally {
                   await clearAccessToken();
                   setIsvaultOpen(false);

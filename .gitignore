@@ -9,9 +9,7 @@ build/
 
 #Django
 /backend/.venv
-/backend/config/db.sqlite3
-/backend/config/db copy.sqlite3
-/backend/config/db_phase3_backup.sqlite3
+/backend/config/*.sqlite3
 
 #Personal files / extra for development
 something.txt

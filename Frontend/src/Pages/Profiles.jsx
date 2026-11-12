@@ -4,7 +4,7 @@ import RegisterModal from '../Components/Dashboard/RegisterModal'
 import { getGoogleToken } from '../api/googleExtensionAuth'
 import { googleLogin } from '../api/googleAuth'
 import { useNavigation } from '../context/NavigationContext'
-import { setAccessToken } from '../api/session'
+import { setAccessToken, setSelectedProfile as persistSelectedProfile } from '../api/session'
 
 const ProfileSelector = ({
   selectedProfile,
@@ -108,9 +108,7 @@ const ProfileSelector = ({
                   e.stopPropagation()
 
                   try {
-                    await chrome.storage.session.set({
-                      selectedProfile: acc.id,
-                    })
+                    await persistSelectedProfile(acc.id)
 
                     setSelectedProfile(acc.id)
                     console.log('Selected profile:', acc.id)

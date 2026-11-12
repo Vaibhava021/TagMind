@@ -8,7 +8,7 @@
   import { useSessionAuth } from './Hooks/useChromeStorage'
   import { NavigationContext } from './context/NavigationContext'
   import Startup from './Pages/Startup'
-import { authenticatedFetch } from './api/session'
+import { authenticatedFetch, getSelectedProfile } from './api/session'
 import './api/axiosAuth'
 
   const App = () => {
@@ -80,17 +80,15 @@ import './api/axiosAuth'
                                               }
 
     useEffect(() => {
-      chrome.storage.session.get('selectedProfile').then(result => {
-        if (result.selectedProfile) {
-          handleSetSelectedProfile(result.selectedProfile)
+      getSelectedProfile().then(profileId => {
+        if (profileId) {
+          handleSetSelectedProfile(profileId)
           navigate('dashboard')
         }
       })
 
-      chrome.storage.session.get('vaultOpen').then(result => {
-        if (result.vaultOpen) {
-          setIsvaultOpen(true)
-        }
+      globalThis.chrome?.storage?.session?.get('vaultOpen').then(result => {
+        if (result?.vaultOpen) setIsvaultOpen(true)
       })
       if (!backendReady) return;
       refreshAccounts();
