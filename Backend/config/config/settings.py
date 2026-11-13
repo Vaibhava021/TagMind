@@ -171,7 +171,7 @@ if os.environ.get("DJANGO_DB_ENGINE"):
         "PASSWORD": os.environ.get("DJANGO_DB_PASSWORD", ""),
         "HOST": os.environ.get("DJANGO_DB_HOST", ""),
         "PORT": os.environ.get("DJANGO_DB_PORT", ""),
-        "CONN_MAX_AGE": int(os.environ.get("DJANGO_DB_CONN_MAX_AGE", "60")),
+        "CONN_MAX_AGE": int(os.environ.get("DJANGO_DB_CONN_MAX_AGE", "0")),
     }
 elif not DEBUG:
     raise RuntimeError("Set DJANGO_DB_ENGINE and database connection variables in production.")

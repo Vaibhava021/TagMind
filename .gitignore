@@ -9,7 +9,7 @@ build/
 
 # Django
 /Backend/.venv/
-/Backend/**/*.sqlite3
+/Backend/**/**.sqlite3
 
 __pycache__/
 *.py[cod]

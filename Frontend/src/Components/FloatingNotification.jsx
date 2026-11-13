@@ -36,12 +36,15 @@ const FloatingNotification = () => {
                 notification.style?.backgroundColor ??
                 (
                     notification.type === 'success'
-                    ? '#16a34a'
-                    : notification.type === 'error'
-                    ? '#dc2626'
-                    : '#3b82f6'
+                        ? '#16a34a'
+                        : notification.type === 'error'
+                        ? '#dc2626'
+                        : notification.type === 'warning'
+                        ? '#d97706'
+                        : '#3b82f6'
                 )
-            }}>
+            }
+            }>
             {notification.message}
         </div>
     )

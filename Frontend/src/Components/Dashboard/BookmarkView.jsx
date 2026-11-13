@@ -413,6 +413,7 @@ export const BookmarkView = ({ className, device, mode, folderData, bookmarks, u
 
               <button className='w-full text-left px-2 py-0.75 hover:bg-blue-500 cursor-pointer'
                   onClick={()=>{
+                    setContextMenu(null)
                     setFolderAction({
                       type: 'move',
                       bookmark: contextMenu.bookmark.id,
@@ -420,20 +421,19 @@ export const BookmarkView = ({ className, device, mode, folderData, bookmarks, u
                     })
                     console.log(folderAction.bookmark)
                     notify('Click on destination Folder', 'edit')
-                    setContextMenu(null)
                   }}
                   >Move To
               </button>
 
               <button className='w-full text-left px-2 py-0.75 hover:bg-blue-500 cursor-pointer'
                   onClick={()=>{
+                    setContextMenu(null)
                     setFolderAction({
                       type: 'copy',
                       bookmark: contextMenu.bookmark.id,
                       folder : null
                     })
                     notify('Click on destination Folder', 'edit')
-                    setContextMenu(null)
                   }}
                   >Copy To
               </button>

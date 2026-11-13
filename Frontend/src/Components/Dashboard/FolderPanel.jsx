@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useMemo, useState } from 'react'
 import { FolderItem } from './FolderItem';
 import { DomainContext } from '../../context/DomainContext';
 import axios from 'axios'
-
+import { useNotification } from '../../context/providers/NotificationContext'
 
 const FolderPanel = ({mode, setMode, bookmarks, useBrandColor ,systemFolder, folderData, selectedFolder, setSelectedFolder, isPosting, setIsPosting, selectedProfile, isvaultOpen, folderAction, setFolderAction}) => {
   const {domain} = useContext(DomainContext);
@@ -33,7 +33,7 @@ const FolderPanel = ({mode, setMode, bookmarks, useBrandColor ,systemFolder, fol
 
   // Combining fetched folder and system folders into one 
   const allFolders = [...systemFolder, ...sortedFolders]
-
+  const { showNotification } = useNotification()
   // finding ids of the glowing folder 
   const normalizeDomain = (url) => {
   if (!url) return '';
@@ -91,6 +91,10 @@ const FolderPanel = ({mode, setMode, bookmarks, useBrandColor ,systemFolder, fol
 
   // Creating folder 
   const createFolder = async () => {
+    if(folderName.length <= 0){
+      showNotification({ message: "Folder name is required", type: "warning" });
+    }
+    else{
     setIsPosting(true)
      try{
       const body = {
@@ -103,6 +107,7 @@ const FolderPanel = ({mode, setMode, bookmarks, useBrandColor ,systemFolder, fol
       // console.log(response.data)
      } catch(err){
         console.log(err.response?.data)
+    }
   }
     setFolderName('')
     setIsCreatingFolder(false)
@@ -175,6 +180,112 @@ const FolderPanel = ({mode, setMode, bookmarks, useBrandColor ,systemFolder, fol
     setIsPosting(false)
   }
 
+  const executeFolderAction = async (destinationFolder) => {
+    const bookmark = bookmarks.find(
+      b => String(b.id) === String(folderAction?.bookmark)
+    )
+
+    if (!bookmark) {
+      showNotification({
+        message: "Bookmark not found",
+        type: "error"
+      })
+      setFolderAction(null)
+      return
+    }
+
+    // "all" is a view, not a valid destination folder.
+    if (destinationFolder.id === 'all') {
+      showNotification({
+        message: "Cannot use All Bookmarks as a destination",
+        type: "warning"
+      })
+      return
+    }
+
+    // Convert Uncategorized system folder to null.
+    const destinationId =
+      destinationFolder.id === 'none'
+        ? null
+        : destinationFolder.id
+
+    // Moving to the same folder does not require an API request.
+    if (
+      folderAction.type === 'move' &&
+      String(bookmark.folder ?? 'none') ===
+      String(destinationId ?? 'none')
+    ) {
+      showNotification({
+        message: "Bookmark is already in this folder",
+        type: "info"
+      })
+      setFolderAction(null)
+      return
+    }
+
+    setIsPosting(true)
+
+    try {
+      if (folderAction.type === 'move') {
+        // Move: update the existing bookmark.
+        await axios.patch(
+          `${import.meta.env.VITE_API_BASE_URL}bookmarks/bookmarks/${bookmark.id}/`,
+          {
+            folder: destinationId
+          },
+          {
+            params: {
+              profile: selectedProfile,
+              vault: isvaultOpen
+            }
+          }
+        )
+
+        showNotification({
+          message: "Bookmark moved successfully",
+          type: "success"
+        })
+      }
+
+      else if (folderAction.type === 'copy') {
+        // Copy: create a new bookmark with the same content.
+        const body = {
+          title: bookmark.title,
+          url: bookmark.url,
+          domain: bookmark.domain,
+          description: bookmark.description,
+          device_type: bookmark.device_type,
+          tags: bookmark.tag_names || [],
+          user: selectedProfile,
+          folder: destinationId,
+          is_vault: isvaultOpen
+        }
+
+        await axios.post(
+          `${import.meta.env.VITE_API_BASE_URL}bookmarks/bookmarks/`,
+          body
+        )
+        showNotification({
+          message: "Bookmark copied successfully",
+          type: "success"
+        })
+      }
+
+      setFolderAction(null)
+
+    } catch (err) {
+      console.error("MOVE/COPY ERROR:", err.response?.data || err)
+
+      showNotification({
+        message: `Failed to ${folderAction.type} bookmark`,
+        type: "error"
+      })
+
+    } finally {
+      setIsPosting(false)
+    }
+  }
+
   useEffect(() => {
     const closeMenu = (e) => {
       if (
@@ -216,11 +327,7 @@ const FolderPanel = ({mode, setMode, bookmarks, useBrandColor ,systemFolder, fol
                       onSaveEdit={()=>updateFolder(folder.id)}
                       onClick={() => {
                                     if(folderAction){
-                                      setFolderAction({
-                                        type: folderAction.type,
-                                        bookmark: folderAction.bookmark,
-                                        folder: folder.id
-                                      })
+                                      executeFolderAction(folder)
                                       return
                                     }
                                     setSelectedFolder(folder.id);
@@ -264,7 +371,7 @@ const FolderPanel = ({mode, setMode, bookmarks, useBrandColor ,systemFolder, fol
                   
                       <button onClick={createFolder} 
                               onMouseDown={(e) => e.preventDefault()}
-                              className='cursor-pointer shrink-0'
+                              className='cursor-pointer shrink-0 font-semibold text-[11px]'
                       >Save
                       </button>
                     </div>

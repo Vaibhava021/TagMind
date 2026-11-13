@@ -421,27 +421,27 @@ deletion-retention lifecycle are integration-tested.
 application backend and connect it to a suitable managed production
 database.
 
--   [ ] Select the cloud hosting platform for the existing Django
+-   [x] Select the cloud hosting platform for the existing Django
     project.
 -   [ ] Verify whether persistent SQLite is supported by the selected
     host and adequate for the expected workload.
--   [ ] If SQLite is not operationally suitable, select a managed
+-   [x] If SQLite is not operationally suitable, select a managed
     PostgreSQL database with a verified Django backend/driver and
     supported transaction behaviour.
 -   [ ] Verify hosting, database, connection, storage, request and
     pricing limits before committing to the provider.
--   [ ] Configure the existing Django project for environment-based
+-   [x] Configure the existing Django project for environment-based
     production database settings without breaking local SQLite
     development.
--   [ ] Preserve existing models, migrations, stable entity UUIDs and
+-   [x] Preserve existing models, migrations, stable entity UUIDs and
     relationships unless a reviewed migration is required.
 -   [ ] Configure persistent database storage and verify that data
     survives application restarts and deployments.
 -   [ ] Configure Django's production database connection pooling or
     connection lifecycle appropriately for the selected host.
--   [ ] Ensure bookmark, folder, tag, profile and vault operations use
+-   [x] Ensure bookmark, folder, tag, profile and vault operations use
     the central cloud database.
--   [ ] Keep existing API routes and response behaviour compatible
+-   [x] Keep existing API routes and response behaviour compatible
     unless a specific change is planned.
 -   [ ] Validate request data and relationships server-side.
 -   [ ] Ensure database transactions protect multi-step mutations such
@@ -452,16 +452,16 @@ database.
 -   [ ] Add health checks and useful backend operational logging.
 -   [ ] Add tests for database connectivity, transactions, failed
     operations and application restart/reconnection.
--   [ ] Confirm local development still works with the existing SQLite
+-   [x] Confirm local development still works with the existing SQLite
     database and migrations.
 
 **Exit criteria**
 
--   [ ] Existing Django code runs against the selected managed
+-   [x] Existing Django code runs against the selected managed
         production database.
 -   [ ] Existing API operations pass regression tests.
 -   [ ] Data persistence and transaction behaviour are verified.
--   [ ] Local SQLite development remains functional.
+-   [x] Local SQLite development remains functional.
 
 ## Phase 5 --- Authentication, ownership and security
 
