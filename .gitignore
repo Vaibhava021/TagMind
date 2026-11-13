@@ -9,6 +9,7 @@ build/
 
 # Django
 /Backend/.venv/
+/Backend/config/staticfiles/
 /Backend/**/**.sqlite3
 
 __pycache__/

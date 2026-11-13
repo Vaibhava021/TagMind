@@ -454,6 +454,8 @@ database.
     operations and application restart/reconnection.
 -   [x] Confirm local development still works with the existing SQLite
     database and migrations.
+-   [x] Configure Django's production database connection lifecycle appropriately.
+-   [x] Verify production SQLite database path and connection age.
 
 **Exit criteria**
 

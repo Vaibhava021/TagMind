@@ -41,10 +41,29 @@ LOGGING = {
             "class": "logging.StreamHandler",
             "formatter": "standard",
         },
+    },
 
+    "root": {
+        "handlers": ["console"],
+        "level": "INFO",
     },
 
     "loggers": {
+        "django": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "django.request": {
+            "handlers": ["console"],
+            "level": "WARNING",
+            "propagate": False,
+        },
+        "django.security": {
+            "handlers": ["console"],
+            "level": "WARNING",
+            "propagate": False,
+        },
         "bookmarks.sync": {
             "handlers": ["console"],
             "level": "INFO",
@@ -126,6 +145,9 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
+
+if not DEBUG:
+    MIDDLEWARE.insert(1, "whitenoise.middleware.WhiteNoiseMiddleware")
 
 
 ROOT_URLCONF = "config.urls"
@@ -211,6 +233,7 @@ REST_FRAMEWORK = {
     'DEFAULT_THROTTLE_RATES': {
         'register': '5/hour',
         'login': '10/hour',
+        'google_login': '5/hour',
         'vault': '10/hour',
     },
 }
@@ -230,7 +253,16 @@ APP_VERSION = "1.0.0"
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
-STATIC_URL = "static/"
+STATIC_URL = "/static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
 
 # AUTH_USER_MODEL = 'accounts.User'
 

@@ -3,7 +3,7 @@ from ..models import Bookmark, Folder
 from .seralizers import BookmarkSerializer,FolderSerializer
 from django.db import transaction
 from ..sync_utils import record_sync_change, bookmark_payload, folder_payload
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import PermissionDenied, ValidationError
 from accounts.models import UserProfile
 from accounts.vault_tokens import require_vault_token
 
@@ -14,8 +14,7 @@ class BookmarkViewSet(ModelViewSet):
 
         profile_id = self.request.query_params.get('profile')
         # print("PROFILE:",profile_id)
-        vault = self.request.query_params.get('vault', 'false').lower()
-        is_vault = (vault == 'true')
+        is_vault = _parse_vault_query_param(self.request)
 
         profile = _validate_profile(self.request.user, profile_id)
         if is_vault:
@@ -28,6 +27,7 @@ class BookmarkViewSet(ModelViewSet):
 
     def perform_destroy(self, instance):
         with transaction.atomic():
+            instance = Bookmark.objects.select_for_update().get(pk=instance.pk)
             record_sync_change(
                 user=instance.user,
                 entity_type="bookmark",
@@ -51,8 +51,7 @@ class FolderViewSet(ModelViewSet):
             .query_params
             .get('profile')
         )
-        vault = self.request.query_params.get('vault', 'false').lower()
-        is_vault = (vault == 'true')
+        is_vault = _parse_vault_query_param(self.request)
 
         profile = _validate_profile(self.request.user, profile_id)
         if is_vault:
@@ -64,12 +63,16 @@ class FolderViewSet(ModelViewSet):
 
 
     def perform_destroy(self, instance):
-        if instance.bookmarks.exclude(user=self.request.user).exists():
-            raise PermissionDenied(
-                "Folder contains bookmarks owned by another account."
-            )
-
         with transaction.atomic():
+            instance = Folder.objects.select_for_update().get(
+                pk=instance.pk,
+                user=self.request.user,
+            )
+            if instance.bookmarks.exclude(user=self.request.user).exists():
+                raise PermissionDenied(
+                    "Folder contains bookmarks owned by another account."
+                )
+
             # Record delete events for bookmarks that will be
             # cascade-deleted with this folder.
             bookmarks = (
@@ -108,3 +111,12 @@ def _validate_profile(user, profile_id):
         return UserProfile.objects.get(pk=profile_id, user=user)
     except (UserProfile.DoesNotExist, ValueError, TypeError):
         raise PermissionDenied("Profile does not belong to the authenticated user")
+
+
+def _parse_vault_query_param(request):
+    value = request.query_params.get('vault', 'false').strip().lower()
+    if value not in {'true', 'false'}:
+        raise ValidationError({
+            'vault': "Must be either 'true' or 'false'.",
+        })
+    return value == 'true'

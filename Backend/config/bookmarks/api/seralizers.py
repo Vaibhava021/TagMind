@@ -1,3 +1,4 @@
+import re
 from rest_framework.serializers import ModelSerializer, ListField, CharField, SerializerMethodField, PrimaryKeyRelatedField
 from ..models import Bookmark, Folder, Tag
 from ..sync_utils import record_sync_change, bookmark_payload, tag_payload, folder_payload
@@ -5,11 +6,46 @@ from django.db import transaction
 from rest_framework import serializers
 from accounts.vault_tokens import require_vault_token
 
+
+MAX_TAGS_PER_BOOKMARK = 50
+
+
+class TagNameField(CharField):
+    """Accept tag names as non-empty strings only, with the model's limit."""
+
+    def __init__(self, **kwargs):
+        kwargs.setdefault("max_length", 50)
+        kwargs.setdefault("allow_blank", False)
+        kwargs.setdefault("trim_whitespace", True)
+        super().__init__(**kwargs)
+
+    def to_internal_value(self, data):
+        if not isinstance(data, str):
+            self.fail("invalid")
+        return super().to_internal_value(data)
+
+
+def normalize_tag_name(tag_name):
+    return re.sub(r"\s+", " ", tag_name).strip().lower()
+
+
+def lock_owned_folder(folder, user):
+    if folder is None:
+        return None
+    try:
+        return Folder.objects.select_for_update().get(pk=folder.pk, user=user)
+    except Folder.DoesNotExist:
+        raise serializers.ValidationError({
+            "folder": "The selected folder is no longer available.",
+        })
+
+
 class BookmarkSerializer(ModelSerializer):
     user = PrimaryKeyRelatedField(read_only=True)
     folder = PrimaryKeyRelatedField(queryset=Folder.objects.none(), allow_null=True, required=False)
     tags = ListField(
-        child=CharField(),
+        child=TagNameField(),
+        max_length=MAX_TAGS_PER_BOOKMARK,
         required=False,
         write_only=True
     )
@@ -48,12 +84,22 @@ class BookmarkSerializer(ModelSerializer):
         tag_names = validated_data.pop("tags", [])
 
         with transaction.atomic():
+            is_vault = validated_data.get("is_vault", False)
+            folder = lock_owned_folder(
+                validated_data.get("folder"),
+                validated_data["user"],
+            )
+            if folder and folder.is_vault != is_vault:
+                raise serializers.ValidationError({
+                    "folder": "Bookmark and folder must belong to the same vault state."
+                })
+            if folder:
+                validated_data["folder"] = folder
+
             bookmark = Bookmark.objects.create(**validated_data)
 
             for tag_name in tag_names:
-                normalized_name = (
-                    tag_name.strip().lower().replace("  ", " ")
-                )
+                normalized_name = normalize_tag_name(tag_name)
 
                 tag, created = Tag.objects.get_or_create(
                     name=normalized_name,
@@ -88,6 +134,17 @@ class BookmarkSerializer(ModelSerializer):
         tag_names = validated_data.pop("tags", None)
 
         with transaction.atomic():
+            instance = Bookmark.objects.select_for_update().get(pk=instance.pk)
+            desired_is_vault = validated_data.get("is_vault", instance.is_vault)
+            desired_folder = validated_data.get("folder", instance.folder)
+            folder = lock_owned_folder(desired_folder, instance.user)
+            if folder and folder.is_vault != desired_is_vault:
+                raise serializers.ValidationError({
+                    "folder": "Bookmark and folder must belong to the same vault state."
+                })
+            if "folder" in validated_data or folder:
+                validated_data["folder"] = folder
+
             # Remember the tags before changing relationships.
             old_tags = list(instance.tags.all())
 
@@ -100,7 +157,7 @@ class BookmarkSerializer(ModelSerializer):
                 new_tags = []
 
                 for tag_name in tag_names:
-                    normalized_name = (tag_name.strip().lower().replace("  ", " "))
+                    normalized_name = normalize_tag_name(tag_name)
 
                     tag, created = Tag.objects.get_or_create(
                         name=normalized_name,
@@ -180,6 +237,19 @@ class FolderSerializer(ModelSerializer):
 
     def validate(self, attrs):
         is_vault = attrs.get("is_vault", getattr(self.instance, "is_vault", False))
+
+        if self.instance and is_vault != self.instance.is_vault:
+            has_mismatched_bookmarks = self.instance.bookmarks.exclude(
+                is_vault=is_vault
+            ).exists()
+            if has_mismatched_bookmarks:
+                raise serializers.ValidationError({
+                    "is_vault": (
+                        "Cannot change a folder's vault state while it contains "
+                        "bookmarks with a different vault state."
+                    )
+                })
+
         if is_vault:
             request = self.context.get("request")
             require_vault_token(request, request.user.profile)
@@ -201,6 +271,18 @@ class FolderSerializer(ModelSerializer):
 
     def update(self, instance, validated_data):
         with transaction.atomic():
+            instance = Folder.objects.select_for_update().get(pk=instance.pk)
+            is_vault = validated_data.get("is_vault", instance.is_vault)
+            if is_vault != instance.is_vault and instance.bookmarks.exclude(
+                is_vault=is_vault
+            ).exists():
+                raise serializers.ValidationError({
+                    "is_vault": (
+                        "Cannot change a folder's vault state while it contains "
+                        "bookmarks with a different vault state."
+                    )
+                })
+
             for attr, value in validated_data.items():
                 setattr(instance, attr, value)
 

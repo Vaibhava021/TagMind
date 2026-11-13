@@ -1,3 +1,5 @@
+import logging
+
 from rest_framework import viewsets
 from rest_framework import generics
 from rest_framework.permissions import AllowAny
@@ -9,6 +11,8 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from accounts.models import UserProfile
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
+from django.db import transaction
+from django.db import DatabaseError, connection
 from django.utils.crypto import get_random_string
 from .serializers import (
     UserProfileSerializer,
@@ -25,6 +29,9 @@ from django.http import JsonResponse
 from django.conf import settings
 from rest_framework.throttling import ScopedRateThrottle
 from accounts.vault_tokens import issue_vault_token
+
+
+health_logger = logging.getLogger("accounts.health")
 
 
 class UserProfileViewSet(viewsets.ModelViewSet):
@@ -104,6 +111,8 @@ class LoginView(generics.GenericAPIView):
 class GoogleLoginView(APIView):
 
     permission_classes = [AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "google_login"
 
     def post(self, request):
         token = request.data.get('token')
@@ -136,7 +145,13 @@ class GoogleLoginView(APIView):
                     status=400,
                 )
 
-            email = idinfo['email']
+            email = idinfo.get('email')
+            if not isinstance(email, str) or not email.strip():
+                return Response(
+                    {'success': False, 'message': 'Google token has no valid email'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            email = email.strip()
         except Exception:
             return Response(
                 {
@@ -146,19 +161,45 @@ class GoogleLoginView(APIView):
                 status=400
             )
 
-        user, created = User.objects.get_or_create(
-            email=email,
-            defaults={'username':get_random_string(12)}
-        )
+        matching_users = User.objects.filter(email__iexact=email)
+        match_count = matching_users.count()
+        if match_count > 1:
+            return Response(
+                {
+                    'success': False,
+                    'message': 'Multiple accounts use this email with different casing. Contact support.',
+                },
+                status=status.HTTP_409_CONFLICT,
+            )
 
-        if created:
-            user.set_unusable_password()
-            user.save()
+        if match_count == 1:
+            user = matching_users.first()
+            try:
+                profile = user.profile
+            except UserProfile.DoesNotExist:
+                profile = None
 
-        profile, _ = UserProfile.objects.get_or_create(
-            user=user,
-            defaults={'provider': 'google'}
-        )
+            # A verified Google address is not permission to silently attach
+            # Google sign-in to an existing email/password account.
+            if profile is None or profile.provider != 'google':
+                return Response(
+                    {
+                        'success': False,
+                        'message': (
+                            'An email/password account already uses this address. '
+                            'Sign in with that account; Google account linking is not supported.'
+                        ),
+                    },
+                    status=status.HTTP_409_CONFLICT,
+                )
+        else:
+            with transaction.atomic():
+                user = User.objects.create_user(
+                    username=get_random_string(12),
+                    email=email.lower(),
+                    password=None,
+                )
+                profile = UserProfile.objects.create(user=user, provider='google')
 
         refresh = RefreshToken.for_user(
             user
@@ -205,9 +246,18 @@ class SetVaultPasswordView(APIView):
                 status=400
             )
 
-        profile.vault_password_hash = (make_password(password))
+        new_hash = make_password(password)
+        updated = UserProfile.objects.filter(
+            pk=profile.pk,
+            vault_password_hash="",
+        ).update(vault_password_hash=new_hash)
+        if updated != 1:
+            return Response(
+                {'success': False, 'message': 'Vault was set by another request'},
+                status=status.HTTP_409_CONFLICT,
+            )
 
-        profile.save()
+        profile.vault_password_hash = new_hash
         return Response({
             'success': True,
             'vault_token': issue_vault_token(profile),
@@ -290,10 +340,8 @@ class ChangeVaultPasswordView(APIView):
 
         profile = SetVaultPasswordView._get_owned_profile(request, profile_id)
 
-        valid = check_password(
-            old_password,
-            profile.vault_password_hash
-        )
+        current_hash = profile.vault_password_hash
+        valid = check_password(old_password, current_hash)
 
         if not valid:
             return Response(
@@ -305,16 +353,41 @@ class ChangeVaultPasswordView(APIView):
                 status=400
             )
 
-        profile.vault_password_hash = (
-            make_password(new_password)
-        )
+        new_hash = make_password(new_password)
+        updated = UserProfile.objects.filter(
+            pk=profile.pk,
+            vault_password_hash=current_hash,
+        ).update(vault_password_hash=new_hash)
+        if updated != 1:
+            return Response(
+                {
+                    'success': False,
+                    'message': 'Vault password changed in another request; retry with the current password.',
+                },
+                status=status.HTTP_409_CONFLICT,
+            )
 
-        profile.save()
         return Response({'success': True})
     
 
 def health(request):
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1")
+            cursor.fetchone()
+    except DatabaseError:
+        health_logger.exception("Database health check failed")
+        return JsonResponse(
+            {
+                "status": "error",
+                "version": settings.APP_VERSION,
+                "checks": {"database": "unavailable"},
+            },
+            status=status.HTTP_503_SERVICE_UNAVAILABLE,
+        )
+
     return JsonResponse({
         "status": "ok",
-        "version": settings.APP_VERSION
+        "version": settings.APP_VERSION,
+        "checks": {"database": "ok"},
     })

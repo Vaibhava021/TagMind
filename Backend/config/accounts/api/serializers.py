@@ -2,7 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth.models import User
 from accounts.models import UserProfile
 from django.contrib.auth.password_validation import validate_password
-from django.db import transaction
+from django.db import IntegrityError, transaction
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
@@ -58,29 +58,50 @@ class RegisterSerializer(serializers.ModelSerializer):
         ]
 
     def validate_email(self, value):
+        normalized_email = value.strip().lower()
 
         if User.objects.filter(
-            email__iexact=value
+            email__iexact=normalized_email
         ).exists():
 
             raise serializers.ValidationError(
                 'Email already registered'
             )
 
+        return normalized_email
+
+    def validate_username(self, value):
+        if User.objects.filter(username__iexact=value).exists():
+            raise serializers.ValidationError('Username already taken')
         return value
 
     def create(self, validated_data):
-        with transaction.atomic():
-            user = User.objects.create_user(
-                username=validated_data['username'],
-                email=validated_data['email'],
-                password=validated_data['password']
-            )
+        try:
+            with transaction.atomic():
+                user = User.objects.create_user(
+                    username=validated_data['username'],
+                    email=validated_data['email'],
+                    password=validated_data['password']
+                )
 
-            UserProfile.objects.create(
-                user=user,
-                provider='email'
-            )
+                UserProfile.objects.create(
+                    user=user,
+                    provider='email'
+                )
+        except IntegrityError:
+            if User.objects.filter(
+                username__iexact=validated_data['username']
+            ).exists():
+                raise serializers.ValidationError({
+                    'username': 'Username already taken'
+                })
+            if User.objects.filter(
+                email__iexact=validated_data['email']
+            ).exists():
+                raise serializers.ValidationError({
+                    'email': 'Email already registered'
+                })
+            raise
 
         return user
     

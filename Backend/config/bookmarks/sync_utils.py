@@ -1,5 +1,12 @@
 
+import logging
+
+from django.db import DatabaseError
+
 from .models import SyncOutBox
+
+
+logger = logging.getLogger("bookmarks.sync")
 
 
 def record_sync_change(
@@ -21,13 +28,25 @@ def record_sync_change(
             f"Missing sync UUID for {entity_type}"
         )
 
-    return SyncOutBox.objects.create(
-        user=user,
-        entity_type=entity_type,
-        entity_uuid=entity_uuid,
-        operation=operation,
-        payload=payload or {},
-    )
+    try:
+        return SyncOutBox.objects.create(
+            user=user,
+            entity_type=entity_type,
+            entity_uuid=entity_uuid,
+            operation=operation,
+            payload=payload or {},
+        )
+    except DatabaseError as exc:
+        # Do not log the payload: bookmark metadata may be private or vaulted.
+        logger.error(
+            "Sync event persistence failed. user_id=%s entity_type=%s "
+            "operation=%s error_type=%s",
+            user.pk,
+            entity_type,
+            operation,
+            type(exc).__name__,
+        )
+        raise
 
 
 def bookmark_payload(bookmark):
