@@ -22,6 +22,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Logging configuration
 # --------------------------------------------------
 
+
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -41,31 +42,68 @@ LOGGING = {
             "class": "logging.StreamHandler",
             "formatter": "standard",
         },
+
+        "application_file": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": BASE_DIR / "logs" / "application.log",
+            "maxBytes": 5 * 1024 * 1024,
+            "backupCount": 3,
+            "encoding": "utf-8",
+            "formatter": "standard",
+        },
+
+        "error_file": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": BASE_DIR / "logs" / "errors.log",
+            "maxBytes": 5 * 1024 * 1024,
+            "backupCount": 3,
+            "encoding": "utf-8",
+            "formatter": "standard",
+            "level": "WARNING",
+        },
+
+        "sync_file": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": BASE_DIR / "logs" / "sync.log",
+            "maxBytes": 5 * 1024 * 1024,
+            "backupCount": 3,
+            "encoding": "utf-8",
+            "formatter": "standard",
+        },
     },
 
     "root": {
-        "handlers": ["console"],
+        "handlers": ["console", "application_file", "error_file"],
         "level": "INFO",
     },
 
     "loggers": {
         "django": {
-            "handlers": ["console"],
+            "handlers": ["console", "application_file", "error_file"],
             "level": "INFO",
             "propagate": False,
         },
+
         "django.request": {
-            "handlers": ["console"],
+            "handlers": ["console", "application_file", "error_file"],
             "level": "WARNING",
             "propagate": False,
         },
+
         "django.security": {
-            "handlers": ["console"],
+            "handlers": ["console", "application_file", "error_file"],
             "level": "WARNING",
             "propagate": False,
         },
+
         "bookmarks.sync": {
-            "handlers": ["console"],
+            "handlers": ["console", "sync_file", "error_file"],
+            "level": "INFO",
+            "propagate": False,
+        },
+
+        "accounts.health": {
+            "handlers": ["console", "application_file", "error_file"],
             "level": "INFO",
             "propagate": False,
         },
