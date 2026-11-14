@@ -1,3 +1,4 @@
 2026-11-14 13:26:35,594 | INFO | django.utils.autoreload | Watching for file changes with StatReloader
 2026-11-14 17:15:57,374 | INFO | django.utils.autoreload | D:\Programming\Bookmark Application\TagMind\Backend\config\config\settings.py changed, reloading.
 2026-11-14 17:15:58,185 | INFO | django.utils.autoreload | Watching for file changes with StatReloader
+2026-11-14 17:24:10,370 | INFO | django.utils.autoreload | D:\Programming\Bookmark Application\TagMind\Backend\config\config\settings.py changed, reloading.
