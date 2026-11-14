@@ -11,7 +11,7 @@ build/
 /Backend/.venv/
 /Backend/config/staticfiles/
 /Backend/**/**.sqlite3
-
+Backend/config/logs/*.log
 __pycache__/
 *.py[cod]
 
